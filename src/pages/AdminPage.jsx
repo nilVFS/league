@@ -151,7 +151,7 @@ function AdminPage() {
         getParticipantChannelLabel(href, manualName),
       href,
       imageUrl: manualImageUrl || profile?.profileImageUrl || "",
-      description: manualDescription || profile?.description || "",
+      description: manualDescription,
     };
   };
 

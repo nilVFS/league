@@ -78,8 +78,7 @@ function ParticipantsPage() {
                   participant.href;
                 const participantImageUrl =
                   participant.imageUrl || profile?.profileImageUrl || "";
-                const participantDescription =
-                  participant.description || profile?.description || "";
+                const participantDescription = participant.description || "";
 
                 return (
                   <a
