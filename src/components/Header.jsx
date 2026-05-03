@@ -6,7 +6,7 @@ function Header({ compact = false }) {
     <header className={`site-header ${compact ? "site-header--compact" : ""}`}>
       <div className="site-header__inner">
         <NavLink className="site-header__logo" to="/">
-          Лига Блейзюки
+          Fate of the Vaal
         </NavLink>
 
         <nav className="site-nav" aria-label="Основная навигация">

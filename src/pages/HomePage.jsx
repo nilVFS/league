@@ -127,7 +127,7 @@ function HomePage() {
           </div>
 
           <div className="scroll-indicator">
-            <span>Scroll</span>
+            <span>Вступить</span>
             <div className="scroll-indicator__line" />
           </div>
         </section>
@@ -141,7 +141,7 @@ function HomePage() {
               sectionRefs.current[index + 1] = node;
             }}
           >
-            <div
+            <a href="https://clck.ru/3TQG34"
               className={`feature-card ${
                 visibleSections[index] ? "feature-card--visible" : ""
               }`}
@@ -153,17 +153,8 @@ function HomePage() {
                 </span>
                 <h2 className="feature-card__title">{section.title}</h2>
                 <p className="feature-card__text">{section.description}</p>
-
-                <div className="feature-card__stats">
-                  {section.stats.map((stat) => (
-                    <div className="feature-card__stat" key={stat.label}>
-                      <div className="feature-card__stat-value">{stat.value}</div>
-                      <div className="feature-card__stat-label">{stat.label}</div>
-                    </div>
-                  ))}
-                </div>
               </div>
-            </div>
+            </a>
           </section>
         ))}
       </div>

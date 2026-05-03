@@ -50,6 +50,11 @@ select {
   font: inherit;
 }
 
+a:hover, a:active, a:visited, a {
+  color: var(--text-main);
+  text-decoration: none;
+}
+
 button {
   border: 0;
 }
