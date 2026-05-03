@@ -296,6 +296,10 @@ button {
   background-clip: text;
 }
 
+.hero-copy__line:nth-child(1) {
+  font-size: clamp(16px, 2.5vw, 48px);;
+}
+
 .scroll-indicator {
   position: absolute;
   left: 50%;
