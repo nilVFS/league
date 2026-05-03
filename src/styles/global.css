@@ -521,7 +521,14 @@ button {
   display: grid;
   gap: 22px;
   margin-top: 34px;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+.clips-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.participants-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
 .clip-card,
@@ -1075,6 +1082,10 @@ button {
 }
 
 @media (max-width: 768px) {
+  .clips-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .site-header__inner,
   .page-card,
   .feature-card {
@@ -1190,6 +1201,11 @@ button {
 }
 
 @media (max-width: 480px) {
+  .clips-grid,
+  .participants-grid {
+    grid-template-columns: 1fr;
+  }
+
   .site-nav {
     gap: 12px;
   }
