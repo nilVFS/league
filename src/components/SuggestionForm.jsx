@@ -112,9 +112,6 @@ function SuggestionForm({ type }) {
               <h2 className="suggestion-modal__title">
                 {isClip ? "Предложить клип" : "Предложить участника"}
               </h2>
-              <p className="suggestion-modal__text">
-                Заполни форму, и предложение отправится на модерацию в админку.
-              </p>
             </div>
 
             <form className="suggestion-form" onSubmit={handleSubmit}>
