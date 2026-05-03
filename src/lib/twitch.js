@@ -27,6 +27,24 @@ export function extractTwitchClipSlug(value) {
   return input;
 }
 
+export async function fetchTwitchClipThumbnailBySlug(value) {
+  const slug = extractTwitchClipSlug(value);
+  if (!slug) {
+    return "";
+  }
+
+  const response = await fetch(
+    `/api/twitch/clip-thumbnail?slug=${encodeURIComponent(slug)}`
+  );
+
+  if (!response.ok) {
+    throw new Error("Не удалось подтянуть превью клипа из Twitch.");
+  }
+
+  const payload = await response.json();
+  return payload.thumbnailUrl || "";
+}
+
 export function getTwitchEmbedParent() {
   if (typeof window === "undefined") {
     return "localhost";

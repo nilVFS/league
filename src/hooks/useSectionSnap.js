@@ -6,6 +6,8 @@ function useSectionSnap(sectionRefs, activeIndex, setActiveIndex) {
   const wheelAccumulatorRef = useRef(0);
   const touchStartYRef = useRef(0);
   const wheelResetTimerRef = useRef(null);
+  const lockReleaseTimerRef = useRef(null);
+  const scrollEndTimerRef = useRef(null);
 
   useEffect(() => {
     activeIndexRef.current = activeIndex;
@@ -20,22 +22,77 @@ function useSectionSnap(sectionRefs, activeIndex, setActiveIndex) {
     const getSectionTop = (section) =>
       Math.round(section.getBoundingClientRect().top + window.scrollY);
 
-    const goToIndex = (index) => {
+    const isAlignedToIndex = (index) =>
+      Math.abs(window.scrollY - getSectionTop(sections[index])) < 2;
+
+    const getClosestSectionIndex = () => {
+      const viewportAnchor = window.scrollY + window.innerHeight / 2;
+      let closestIndex = 0;
+      let smallestDistance = Number.POSITIVE_INFINITY;
+
+      sections.forEach((section, index) => {
+        const sectionCenter = getSectionTop(section) + section.offsetHeight / 2;
+        const distance = Math.abs(sectionCenter - viewportAnchor);
+
+        if (distance < smallestDistance) {
+          smallestDistance = distance;
+          closestIndex = index;
+        }
+      });
+
+      return closestIndex;
+    };
+
+    const syncActiveIndexToViewport = () => {
+      const closestIndex = getClosestSectionIndex();
+      if (closestIndex !== activeIndexRef.current) {
+        activeIndexRef.current = closestIndex;
+        setActiveIndex(closestIndex);
+      }
+
+      return closestIndex;
+    };
+
+    const goToIndex = (index, options = {}) => {
+      const { behavior = "smooth", force = false } = options;
       const clampedIndex = Math.max(0, Math.min(index, sections.length - 1));
-      if (clampedIndex === activeIndexRef.current || lockedRef.current) {
+      if (lockedRef.current && !force) {
         return;
       }
 
+      if (
+        clampedIndex === activeIndexRef.current &&
+        isAlignedToIndex(clampedIndex) &&
+        !force
+      ) {
+        return;
+      }
+
+      window.clearTimeout(lockReleaseTimerRef.current);
       lockedRef.current = true;
+      activeIndexRef.current = clampedIndex;
       setActiveIndex(clampedIndex);
+      const targetTop = getSectionTop(sections[clampedIndex]);
+
       window.scrollTo({
-        top: getSectionTop(sections[clampedIndex]),
-        behavior: "smooth",
+        top: targetTop,
+        behavior,
       });
 
-      window.setTimeout(() => {
+      lockReleaseTimerRef.current = window.setTimeout(() => {
+        window.scrollTo({
+          top: targetTop,
+          behavior: "auto",
+        });
         lockedRef.current = false;
-      }, 650);
+      }, behavior === "smooth" ? 420 : 0);
+    };
+
+    const snapToClosestSection = () => {
+      const closestIndex = syncActiveIndexToViewport();
+      if (!isAlignedToIndex(closestIndex)) {
+        goToIndex(closestIndex, { force: true });
+      }
     };
 
     const handleWheel = (event) => {
@@ -44,6 +101,7 @@ function useSectionSnap(sectionRefs, activeIndex, setActiveIndex) {
       }
 
       event.preventDefault();
+      syncActiveIndexToViewport();
       wheelAccumulatorRef.current += event.deltaY;
 
       window.clearTimeout(wheelResetTimerRef.current);
@@ -64,14 +122,16 @@ function useSectionSnap(sectionRefs, activeIndex, setActiveIndex) {
         return;
       }
 
+      const currentIndex = syncActiveIndexToViewport();
+
       if (["ArrowDown", "PageDown", " "].includes(event.key)) {
         event.preventDefault();
-        goToIndex(activeIndexRef.current + 1);
+        goToIndex(currentIndex + 1);
       }
 
       if (["ArrowUp", "PageUp"].includes(event.key)) {
         event.preventDefault();
-        goToIndex(activeIndexRef.current - 1);
+        goToIndex(currentIndex - 1);
       }
     };
 
@@ -85,7 +145,8 @@ function useSectionSnap(sectionRefs, activeIndex, setActiveIndex) {
         return;
       }
 
-      goToIndex(activeIndexRef.current + (swipeDistance > 0 ? 1 : -1));
+      const currentIndex = syncActiveIndexToViewport();
+      goToIndex(currentIndex + (swipeDistance > 0 ? 1 : -1));
     };
 
     const alignActiveSection = () => {
@@ -100,7 +161,17 @@ function useSectionSnap(sectionRefs, activeIndex, setActiveIndex) {
       });
     };
 
+    const handleScroll = () => {
+      window.clearTimeout(scrollEndTimerRef.current);
+      scrollEndTimerRef.current = window.setTimeout(() => {
+        if (!lockedRef.current) {
+          snapToClosestSection();
+        }
+      }, 120);
+    };
+
     window.addEventListener("wheel", handleWheel, { passive: false });
+    window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("touchstart", handleTouchStart, { passive: true });
     window.addEventListener("touchend", handleTouchEnd, { passive: true });
@@ -108,7 +179,10 @@ function useSectionSnap(sectionRefs, activeIndex, setActiveIndex) {
 
     return () => {
       window.clearTimeout(wheelResetTimerRef.current);
+      window.clearTimeout(lockReleaseTimerRef.current);
+      window.clearTimeout(scrollEndTimerRef.current);
       window.removeEventListener("wheel", handleWheel);
+      window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("touchstart", handleTouchStart);
       window.removeEventListener("touchend", handleTouchEnd);

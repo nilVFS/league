@@ -27,7 +27,6 @@ function SuggestionForm({ type }) {
   const [participantForm, setParticipantForm] = useState(initialParticipantState);
 
   const isClip = type === "clip";
-  const form = isClip ? clipForm : participantForm;
 
   useEffect(() => {
     if (!open) {
@@ -54,18 +53,72 @@ function SuggestionForm({ type }) {
     setParticipantForm(initialParticipantState);
   };
 
+  const getParticipantChannelLabel = (href, fallbackName = "") => {
+    const value = href.trim();
+    if (!value) {
+      return fallbackName.trim();
+    }
+
+    try {
+      const url = new URL(value);
+      const channelName = url.pathname.split("/").filter(Boolean)[0];
+      return channelName ? `${url.hostname}/${channelName}` : url.hostname;
+    } catch {
+      return fallbackName.trim() || value;
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setSubmitting(true);
     setStatus("");
 
     try {
-      await createDocument(collectionNames.suggestions, {
-        type,
-        status: "pending",
-        ...form,
-        clipSlug: isClip ? extractTwitchClipSlug(form.clipSlug) : undefined,
-      });
+      if (isClip) {
+        const title = clipForm.title.trim();
+        const clipSlug = extractTwitchClipSlug(clipForm.clipSlug);
+
+        if (!title) {
+          throw new Error("Укажи название клипа.");
+        }
+
+        if (!clipSlug) {
+          throw new Error("Укажи ссылку на Twitch Clip.");
+        }
+
+        await createDocument(collectionNames.suggestions, {
+          type,
+          status: "pending",
+          title,
+          preview: clipForm.preview.trim() || title,
+          description: clipForm.description.trim() || clipForm.preview.trim() || title,
+          clipSlug,
+          thumbnailUrl: clipForm.thumbnailUrl.trim(),
+          contact: clipForm.contact.trim(),
+        });
+      } else {
+        const name = participantForm.name.trim();
+        const href = participantForm.href.trim();
+
+        if (!name) {
+          throw new Error("Укажи ник участника.");
+        }
+
+        if (!href) {
+          throw new Error("Укажи ссылку на канал.");
+        }
+
+        await createDocument(collectionNames.suggestions, {
+          type,
+          status: "pending",
+          name,
+          channel:
+            participantForm.channel.trim() || getParticipantChannelLabel(href, name),
+          href,
+          imageUrl: participantForm.imageUrl.trim(),
+          contact: participantForm.contact.trim(),
+        });
+      }
 
       reset();
       setOpen(false);
@@ -134,6 +187,7 @@ function SuggestionForm({ type }) {
                       onChange={(event) =>
                         setClipForm((current) => ({ ...current, preview: event.target.value }))
                       }
+                      placeholder="Необязательно. Если пусто, подставим название."
                       rows="3"
                       value={clipForm.preview}
                     />
@@ -147,6 +201,7 @@ function SuggestionForm({ type }) {
                           description: event.target.value,
                         }))
                       }
+                      placeholder="Необязательно. Если пусто, возьмём короткий текст."
                       rows="4"
                       value={clipForm.description}
                     />
@@ -171,6 +226,7 @@ function SuggestionForm({ type }) {
                           thumbnailUrl: event.target.value,
                         }))
                       }
+                      placeholder="Необязательно"
                       type="url"
                       value={clipForm.thumbnailUrl}
                     />
@@ -201,7 +257,7 @@ function SuggestionForm({ type }) {
                           channel: event.target.value,
                         }))
                       }
-                      required
+                      placeholder="Необязательно. Если пусто, соберём из ссылки."
                       type="text"
                       value={participantForm.channel}
                     />
@@ -229,7 +285,7 @@ function SuggestionForm({ type }) {
                           imageUrl: event.target.value,
                         }))
                       }
-                      required
+                      placeholder="Необязательно"
                       type="url"
                       value={participantForm.imageUrl}
                     />

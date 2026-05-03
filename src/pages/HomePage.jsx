@@ -38,25 +38,39 @@ function HomePage() {
       return undefined;
     }
 
+    const intersectionRatios = new Map();
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           const index = Number(entry.target.dataset.index);
-          if (entry.isIntersecting) {
-            setActiveIndex(index);
-          }
+          intersectionRatios.set(index, entry.isIntersecting ? entry.intersectionRatio : 0);
 
           setVisibleSections((current) => {
             const next = [...current];
-            next[index - 1] = entry.intersectionRatio > 0.3;
+            if (index > 0) {
+              next[index - 1] = entry.intersectionRatio > 0.3;
+            }
             return next;
           });
         });
+
+        let nextActiveIndex = 0;
+        let maxRatio = 0;
+
+        intersectionRatios.forEach((ratio, index) => {
+          if (ratio > maxRatio) {
+            maxRatio = ratio;
+            nextActiveIndex = index;
+          }
+        });
+
+        setActiveIndex(nextActiveIndex);
       },
       { threshold: [0.3, 0.6] }
     );
 
-    sections.slice(1).forEach((section) => observer.observe(section));
+    sections.forEach((section) => observer.observe(section));
 
     return () => observer.disconnect();
   }, []);

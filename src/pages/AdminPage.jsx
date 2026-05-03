@@ -14,10 +14,12 @@ import {
   isCollectionEmpty,
   seedCollection,
   updateDocument,
-  uploadFile,
 } from "../lib/content";
 import { auth } from "../lib/firebase";
-import { extractTwitchClipSlug } from "../lib/twitch";
+import {
+  extractTwitchClipSlug,
+  fetchTwitchClipThumbnailBySlug,
+} from "../lib/twitch";
 
 const clipInitialState = {
   title: "",
@@ -58,8 +60,6 @@ function AdminPage() {
   const [editingClipId, setEditingClipId] = useState("");
   const [editingParticipantId, setEditingParticipantId] = useState("");
   const [editingAwardId, setEditingAwardId] = useState("");
-  const [clipThumbnailFile, setClipThumbnailFile] = useState(null);
-  const [participantImageFile, setParticipantImageFile] = useState(null);
   const [status, setStatus] = useState("");
   const [submitting, setSubmitting] = useState("");
 
@@ -87,16 +87,42 @@ function AdminPage() {
     setStatus(message);
   };
 
+  const resolveClipThumbnailUrl = async (clipSlug, currentThumbnailUrl = "") => {
+    const manualThumbnailUrl = currentThumbnailUrl.trim();
+    if (manualThumbnailUrl) {
+      return manualThumbnailUrl;
+    }
+
+    try {
+      return await fetchTwitchClipThumbnailBySlug(clipSlug);
+    } catch {
+      return "";
+    }
+  };
+
   const resetClipForm = () => {
     setClipForm(clipInitialState);
-    setClipThumbnailFile(null);
     setEditingClipId("");
   };
 
   const resetParticipantForm = () => {
     setParticipantForm(participantInitialState);
-    setParticipantImageFile(null);
     setEditingParticipantId("");
+  };
+
+  const getParticipantChannelLabel = (href, fallbackName = "") => {
+    const value = href.trim();
+    if (!value) {
+      return fallbackName.trim();
+    }
+
+    try {
+      const url = new URL(value);
+      const channelName = url.pathname.split("/").filter(Boolean)[0];
+      return channelName ? `${url.hostname}/${channelName}` : url.hostname;
+    } catch {
+      return fallbackName.trim() || value;
+    }
   };
 
   const resetAwardForm = () => {
@@ -164,24 +190,27 @@ function AdminPage() {
     setMessage("");
 
     try {
-      let thumbnailUrl = clipForm.thumbnailUrl.trim();
       const clipSlug = extractTwitchClipSlug(clipForm.clipSlug);
+      const title = clipForm.title.trim();
 
+      if (!title) {
+        throw new Error("Укажи название клипа.");
+      }
       if (!clipSlug) {
         throw new Error("Укажи ссылку на Twitch Clip или его slug.");
       }
 
-      if (clipThumbnailFile) {
-        thumbnailUrl = await uploadFile(
-          `clips/thumbnails/${Date.now()}-${clipThumbnailFile.name}`,
-          clipThumbnailFile
-        );
-      }
+      const preview = clipForm.preview.trim() || title;
+      const description = clipForm.description.trim() || preview;
+      const thumbnailUrl = await resolveClipThumbnailUrl(
+        clipSlug,
+        clipForm.thumbnailUrl
+      );
 
       const payload = {
-        title: clipForm.title.trim(),
-        preview: clipForm.preview.trim(),
-        description: clipForm.description.trim(),
+        title,
+        preview,
+        description,
         clipSlug,
         thumbnailUrl,
       };
@@ -208,24 +237,22 @@ function AdminPage() {
     setMessage("");
 
     try {
-      let imageUrl = participantForm.imageUrl.trim();
+      const name = participantForm.name.trim();
+      const href = participantForm.href.trim();
 
-      if (!imageUrl && !participantImageFile) {
-        throw new Error("Укажи URL изображения или загрузи картинку.");
+      if (!name) {
+        throw new Error("Укажи ник участника.");
       }
 
-      if (participantImageFile) {
-        imageUrl = await uploadFile(
-          `participants/${Date.now()}-${participantImageFile.name}`,
-          participantImageFile
-        );
+      if (!href) {
+        throw new Error("Укажи ссылку на канал.");
       }
 
       const payload = {
-        name: participantForm.name.trim(),
-        channel: participantForm.channel.trim(),
-        href: participantForm.href.trim(),
-        imageUrl,
+        name,
+        channel: participantForm.channel.trim() || getParticipantChannelLabel(href, name),
+        href,
+        imageUrl: participantForm.imageUrl.trim(),
       };
 
       if (editingParticipantId) {
@@ -290,12 +317,18 @@ function AdminPage() {
 
     try {
       if (suggestion.type === "clip") {
+        const clipSlug = suggestion.clipSlug || "";
+        const thumbnailUrl = await resolveClipThumbnailUrl(
+          clipSlug,
+          suggestion.thumbnailUrl || ""
+        );
+
         await createDocument(collectionNames.clips, {
           title: suggestion.title || "",
           preview: suggestion.preview || "",
           description: suggestion.description || "",
-          clipSlug: suggestion.clipSlug || "",
-          thumbnailUrl: suggestion.thumbnailUrl || "",
+          clipSlug,
+          thumbnailUrl,
         });
       }
 
@@ -473,7 +506,7 @@ function AdminPage() {
                         onChange={(event) =>
                           setClipForm((current) => ({ ...current, preview: event.target.value }))
                         }
-                        required
+                        placeholder="Необязательно. Если пусто, подставим название."
                         rows="3"
                         value={clipForm.preview}
                       />
@@ -487,7 +520,7 @@ function AdminPage() {
                             description: event.target.value,
                           }))
                         }
-                        required
+                        placeholder="Необязательно. Если пусто, возьмём текст карточки."
                         rows="4"
                         value={clipForm.description}
                       />
@@ -498,6 +531,7 @@ function AdminPage() {
                         onChange={(event) =>
                           setClipForm((current) => ({ ...current, clipSlug: event.target.value }))
                         }
+                        required
                         type="text"
                         value={clipForm.clipSlug}
                       />
@@ -511,18 +545,9 @@ function AdminPage() {
                             thumbnailUrl: event.target.value,
                           }))
                         }
+                        placeholder="Необязательно. Без Twitch API автопревью недоступно."
                         type="url"
                         value={clipForm.thumbnailUrl}
-                      />
-                    </label>
-                    <label className="admin-field">
-                      <span>Или загрузить превью</span>
-                      <input
-                        accept="image/*"
-                        onChange={(event) =>
-                          setClipThumbnailFile(event.target.files?.[0] || null)
-                        }
-                        type="file"
                       />
                     </label>
                     <div className="admin-actions">
@@ -617,7 +642,7 @@ function AdminPage() {
                             channel: event.target.value,
                           }))
                         }
-                        required
+                        placeholder="Необязательно. Если пусто, соберём из ссылки."
                         type="text"
                         value={participantForm.channel}
                       />
@@ -645,18 +670,9 @@ function AdminPage() {
                             imageUrl: event.target.value,
                           }))
                         }
+                        placeholder="Необязательно"
                         type="url"
                         value={participantForm.imageUrl}
-                      />
-                    </label>
-                    <label className="admin-field">
-                      <span>Или загрузить изображение</span>
-                      <input
-                        accept="image/*"
-                        onChange={(event) =>
-                          setParticipantImageFile(event.target.files?.[0] || null)
-                        }
-                        type="file"
                       />
                     </label>
                     <div className="admin-actions">

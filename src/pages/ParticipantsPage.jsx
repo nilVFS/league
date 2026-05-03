@@ -32,14 +32,23 @@ function ParticipantsPage() {
                   rel="noreferrer noopener"
                   target="_blank"
                 >
-                  <img
-                    alt={`Аватар ${participant.name}`}
-                    className="participant-card__image"
-                    src={participant.imageUrl}
-                  />
+                  {participant.imageUrl ? (
+                    <img
+                      alt={`Аватар ${participant.name}`}
+                      className="participant-card__image"
+                      src={participant.imageUrl}
+                    />
+                  ) : (
+                    <div className="clip-card__placeholder participant-card__placeholder">
+                      <span>Участник</span>
+                      <strong>{participant.name}</strong>
+                    </div>
+                  )}
                   <div className="participant-card__body">
                     <div className="participant-card__name">{participant.name}</div>
-                    <div className="participant-card__channel">{participant.channel}</div>
+                    <div className="participant-card__channel">
+                      {participant.channel || participant.href}
+                    </div>
                   </div>
                 </a>
               ))}

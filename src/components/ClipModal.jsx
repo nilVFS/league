@@ -59,7 +59,9 @@ function ClipModal({ clip, onClose }) {
         )}
         <div className="modal__meta">
           <div className="modal__title">{clip.title}</div>
-          <div className="modal__text">{clip.description}</div>
+          <div className="modal__text">
+            {clip.description || clip.preview || "Описание для этого клипа пока не добавлено."}
+          </div>
         </div>
       </div>
     </div>

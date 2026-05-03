@@ -614,6 +614,11 @@ button {
   filter: saturate(0.85) sepia(0.12);
 }
 
+.participant-card__placeholder {
+  min-height: unset;
+  aspect-ratio: 4 / 3;
+}
+
 .clip-card__body,
 .participant-card__body {
   padding: 18px 18px 20px;
