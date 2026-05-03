@@ -137,7 +137,6 @@ function SuggestionForm({ type }) {
                       onChange={(event) =>
                         setClipForm((current) => ({ ...current, preview: event.target.value }))
                       }
-                      required
                       rows="3"
                       value={clipForm.preview}
                     />
@@ -151,7 +150,6 @@ function SuggestionForm({ type }) {
                           description: event.target.value,
                         }))
                       }
-                      required
                       rows="4"
                       value={clipForm.description}
                     />
@@ -178,17 +176,6 @@ function SuggestionForm({ type }) {
                       }
                       type="url"
                       value={clipForm.thumbnailUrl}
-                    />
-                  </label>
-                  <label className="admin-field">
-                    <span>Контакт для связи</span>
-                    <input
-                      onChange={(event) =>
-                        setClipForm((current) => ({ ...current, contact: event.target.value }))
-                      }
-                      placeholder="@telegram / discord / email"
-                      type="text"
-                      value={clipForm.contact}
                     />
                   </label>
                 </>
@@ -248,20 +235,6 @@ function SuggestionForm({ type }) {
                       required
                       type="url"
                       value={participantForm.imageUrl}
-                    />
-                  </label>
-                  <label className="admin-field">
-                    <span>Контакт для связи</span>
-                    <input
-                      onChange={(event) =>
-                        setParticipantForm((current) => ({
-                          ...current,
-                          contact: event.target.value,
-                        }))
-                      }
-                      placeholder="@telegram / discord / email"
-                      type="text"
-                      value={participantForm.contact}
                     />
                   </label>
                 </>
