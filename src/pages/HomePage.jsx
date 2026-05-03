@@ -142,6 +142,7 @@ function HomePage() {
             }}
           >
             <a href="https://clck.ru/3TQG34"
+              target="_blank"
               className={`feature-card ${
                 visibleSections[index] ? "feature-card--visible" : ""
               }`}
