@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { homeHeroLines, homeSections } from "../data/siteData";
+import { homeHeroLines } from "../data/siteData";
 import useSectionSnap from "../hooks/useSectionSnap";
 
 function HomePage() {
+  const joinHref = "https://clck.ru/3TQG34";
   const sectionRefs = useRef([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [heroVisible, setHeroVisible] = useState(false);
+  const [ctaReady, setCtaReady] = useState(false);
+  const activeHomeSections = [];
   const [visibleSections, setVisibleSections] = useState(() =>
-    homeSections.map(() => false)
+    activeHomeSections.map(() => false)
   );
   const particleSpecs = useMemo(
     () =>
@@ -28,6 +31,14 @@ function HomePage() {
     const timer = window.setTimeout(() => {
       setHeroVisible(true);
     }, 250);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setCtaReady(true);
+    }, 2700);
 
     return () => window.clearTimeout(timer);
   }, []);
@@ -80,7 +91,7 @@ function HomePage() {
       <div className="cursor-glow" aria-hidden="true" />
 
       <div className="screen-dots" aria-label="Навигация по блокам">
-        {[0, ...homeSections.map((_, index) => index + 1)].map((index) => (
+        {[0, ...activeHomeSections.map((_, index) => index + 1)].map((index) => (
           <button
             key={index}
             aria-label={`Экран ${index + 1}`}
@@ -140,13 +151,24 @@ function HomePage() {
             ))}
           </div>
 
-          <div className="scroll-indicator">
+          <a
+            className={`scroll-indicator ${
+              ctaReady ? "scroll-indicator--cta" : ""
+            }`}
+            href={joinHref}
+            rel="noreferrer noopener"
+            target="_blank"
+          >
             <span>Вступить</span>
             <div className="scroll-indicator__line" />
-          </div>
+          </a>
         </section>
 
-        {homeSections.map((section, index) => (
+        {/*
+          Временно отключили нижний блок главной.
+          Чтобы вернуть его обратно, достаточно снова рендерить `homeSections`.
+        */}
+        {activeHomeSections.map((section, index) => (
           <section
             key={section.id}
             className="screen"
@@ -155,8 +177,9 @@ function HomePage() {
               sectionRefs.current[index + 1] = node;
             }}
           >
-            <a href="https://clck.ru/3TQG34"
+            <a href={joinHref}
               target="_blank"
+              rel="noreferrer noopener"
               className={`feature-card ${
                 visibleSections[index] ? "feature-card--visible" : ""
               }`}
