@@ -7,7 +7,7 @@ export const navItems = [
 
 export const homeHeroLines = [
   "Fate of the Vaal",
-  "Legue",
+  "League",
 ];
 
 export const homeSections = [
