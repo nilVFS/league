@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { collectionNames, createDocument } from "../lib/content";
-import { extractTwitchClipSlug } from "../lib/twitch";
+import {
+  extractTwitchClipSlug,
+  fetchTwitchChannelProfile,
+} from "../lib/twitch";
 
 const initialClipState = {
   title: "",
@@ -16,6 +19,7 @@ const initialParticipantState = {
   channel: "",
   href: "",
   imageUrl: "",
+  description: "",
   contact: "",
 };
 
@@ -68,6 +72,32 @@ function SuggestionForm({ type }) {
     }
   };
 
+  const resolveParticipantData = async (formValue) => {
+    const href = formValue.href.trim();
+    const manualName = formValue.name.trim();
+    const manualChannel = formValue.channel.trim();
+    const manualImageUrl = formValue.imageUrl.trim();
+    const manualDescription = formValue.description.trim();
+
+    let profile = null;
+    try {
+      profile = await fetchTwitchChannelProfile(href);
+    } catch {
+      profile = null;
+    }
+
+    return {
+      name: manualName || profile?.displayName || "",
+      channel:
+        manualChannel ||
+        (profile?.login ? `twitch.tv/${profile.login}` : "") ||
+        getParticipantChannelLabel(href, manualName),
+      href,
+      imageUrl: manualImageUrl || profile?.profileImageUrl || "",
+      description: manualDescription || profile?.description || "",
+    };
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setSubmitting(true);
@@ -97,25 +127,22 @@ function SuggestionForm({ type }) {
           contact: clipForm.contact.trim(),
         });
       } else {
-        const name = participantForm.name.trim();
         const href = participantForm.href.trim();
-
-        if (!name) {
-          throw new Error("Укажи ник участника.");
-        }
 
         if (!href) {
           throw new Error("Укажи ссылку на канал.");
         }
 
+        const participantPayload = await resolveParticipantData(participantForm);
+
+        if (!participantPayload.name) {
+          throw new Error("Не удалось определить ник участника. Укажи его вручную.");
+        }
+
         await createDocument(collectionNames.suggestions, {
           type,
           status: "pending",
-          name,
-          channel:
-            participantForm.channel.trim() || getParticipantChannelLabel(href, name),
-          href,
-          imageUrl: participantForm.imageUrl.trim(),
+          ...participantPayload,
           contact: participantForm.contact.trim(),
         });
       }
@@ -243,7 +270,7 @@ function SuggestionForm({ type }) {
                           name: event.target.value,
                         }))
                       }
-                      required
+                      placeholder="Необязательно. Если пусто, подтянем из Twitch."
                       type="text"
                       value={participantForm.name}
                     />
@@ -288,6 +315,20 @@ function SuggestionForm({ type }) {
                       placeholder="Необязательно"
                       type="url"
                       value={participantForm.imageUrl}
+                    />
+                  </label>
+                  <label className="admin-field">
+                    <span>Описание</span>
+                    <textarea
+                      onChange={(event) =>
+                        setParticipantForm((current) => ({
+                          ...current,
+                          description: event.target.value,
+                        }))
+                      }
+                      placeholder="Необязательно"
+                      rows="3"
+                      value={participantForm.description}
                     />
                   </label>
                 </>

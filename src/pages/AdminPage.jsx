@@ -18,6 +18,7 @@ import {
 import { auth } from "../lib/firebase";
 import {
   extractTwitchClipSlug,
+  fetchTwitchChannelProfile,
   fetchTwitchClipThumbnailBySlug,
 } from "../lib/twitch";
 
@@ -34,11 +35,14 @@ const participantInitialState = {
   channel: "",
   href: "",
   imageUrl: "",
+  description: "",
 };
 
 const awardInitialState = {
+  category: "",
   title: "",
   score: "",
+  description: "",
 };
 
 const adminTabs = [
@@ -123,6 +127,32 @@ function AdminPage() {
     } catch {
       return fallbackName.trim() || value;
     }
+  };
+
+  const resolveParticipantData = async (formValue) => {
+    const href = formValue.href.trim();
+    const manualName = formValue.name.trim();
+    const manualChannel = formValue.channel.trim();
+    const manualImageUrl = formValue.imageUrl.trim();
+    const manualDescription = formValue.description.trim();
+
+    let profile = null;
+    try {
+      profile = await fetchTwitchChannelProfile(href);
+    } catch {
+      profile = null;
+    }
+
+    return {
+      name: manualName || profile?.displayName || "",
+      channel:
+        manualChannel ||
+        (profile?.login ? `twitch.tv/${profile.login}` : "") ||
+        getParticipantChannelLabel(href, manualName),
+      href,
+      imageUrl: manualImageUrl || profile?.profileImageUrl || "",
+      description: manualDescription || profile?.description || "",
+    };
   };
 
   const resetAwardForm = () => {
@@ -237,23 +267,17 @@ function AdminPage() {
     setMessage("");
 
     try {
-      const name = participantForm.name.trim();
       const href = participantForm.href.trim();
-
-      if (!name) {
-        throw new Error("Укажи ник участника.");
-      }
 
       if (!href) {
         throw new Error("Укажи ссылку на канал.");
       }
 
-      const payload = {
-        name,
-        channel: participantForm.channel.trim() || getParticipantChannelLabel(href, name),
-        href,
-        imageUrl: participantForm.imageUrl.trim(),
-      };
+      const payload = await resolveParticipantData(participantForm);
+
+      if (!payload.name) {
+        throw new Error("Не удалось определить ник участника. Укажи его вручную.");
+      }
 
       if (editingParticipantId) {
         await updateDocument(collectionNames.participants, editingParticipantId, payload);
@@ -278,8 +302,10 @@ function AdminPage() {
 
     try {
       const payload = {
+        category: awardForm.category.trim() || "Общие",
         title: awardForm.title.trim(),
         score: Number(awardForm.score),
+        description: awardForm.description.trim(),
       };
 
       if (editingAwardId) {
@@ -338,6 +364,7 @@ function AdminPage() {
           channel: suggestion.channel || "",
           href: suggestion.href || "",
           imageUrl: suggestion.imageUrl || "",
+          description: suggestion.description || "",
         });
       }
 
@@ -628,7 +655,7 @@ function AdminPage() {
                             name: event.target.value,
                           }))
                         }
-                        required
+                        placeholder="Необязательно. Если пусто, подтянем из Twitch."
                         type="text"
                         value={participantForm.name}
                       />
@@ -675,6 +702,20 @@ function AdminPage() {
                         value={participantForm.imageUrl}
                       />
                     </label>
+                    <label className="admin-field">
+                      <span>Описание</span>
+                      <textarea
+                        onChange={(event) =>
+                          setParticipantForm((current) => ({
+                            ...current,
+                            description: event.target.value,
+                          }))
+                        }
+                        placeholder="Необязательно. Можно дописать свой текст."
+                        rows="3"
+                        value={participantForm.description}
+                      />
+                    </label>
                     <div className="admin-actions">
                       <button
                         className="admin-button"
@@ -708,6 +749,9 @@ function AdminPage() {
                         <div>
                           <strong>{participant.name}</strong>
                           <div className="admin-list__meta">{participant.channel}</div>
+                          {participant.description ? (
+                            <div className="admin-list__meta">{participant.description}</div>
+                          ) : null}
                         </div>
                         <div className="admin-list__actions">
                           <button
@@ -719,6 +763,7 @@ function AdminPage() {
                                 channel: participant.channel || "",
                                 href: participant.href || "",
                                 imageUrl: participant.imageUrl || "",
+                                description: participant.description || "",
                               });
                               setActiveTab("participants");
                             }}
@@ -754,6 +799,20 @@ function AdminPage() {
                   <h2>{editingAwardId ? "Редактировать награду" : "Добавить награду"}</h2>
                   <form className="admin-form" onSubmit={handleAwardSubmit}>
                     <label className="admin-field">
+                      <span>Раздел</span>
+                      <input
+                        onChange={(event) =>
+                          setAwardForm((current) => ({
+                            ...current,
+                            category: event.target.value,
+                          }))
+                        }
+                        placeholder="Например: Основные, PvP, Боссы"
+                        type="text"
+                        value={awardForm.category}
+                      />
+                    </label>
+                    <label className="admin-field">
                       <span>Название награды</span>
                       <input
                         onChange={(event) =>
@@ -774,6 +833,20 @@ function AdminPage() {
                         required
                         type="number"
                         value={awardForm.score}
+                      />
+                    </label>
+                    <label className="admin-field">
+                      <span>Описание</span>
+                      <textarea
+                        onChange={(event) =>
+                          setAwardForm((current) => ({
+                            ...current,
+                            description: event.target.value,
+                          }))
+                        }
+                        placeholder="Например: бонусные баллы за скорость, редкое условие и т.д."
+                        rows="3"
+                        value={awardForm.description}
                       />
                     </label>
                     <div className="admin-actions">
@@ -804,7 +877,12 @@ function AdminPage() {
                       <div className="admin-list__item" key={award.id}>
                         <div>
                           <strong>{award.title}</strong>
-                          <div className="admin-list__meta">{award.score} баллов</div>
+                          <div className="admin-list__meta">
+                            {(award.category || "Общие")} • {award.score} баллов
+                          </div>
+                          {award.description ? (
+                            <div className="admin-list__meta">{award.description}</div>
+                          ) : null}
                         </div>
                         <div className="admin-list__actions">
                           <button
@@ -812,8 +890,10 @@ function AdminPage() {
                             onClick={() => {
                               setEditingAwardId(award.id);
                               setAwardForm({
+                                category: award.category || "",
                                 title: award.title || "",
                                 score: String(award.score ?? ""),
+                                description: award.description || "",
                               });
                               setActiveTab("awards");
                             }}

@@ -646,6 +646,13 @@ button {
   color: var(--text-muted);
 }
 
+.participant-card__description {
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: rgba(242, 230, 202, 0.82);
+}
+
 .tasks-table {
   margin-top: 34px;
   overflow: hidden;
@@ -657,6 +664,19 @@ button {
 .tasks-table table {
   width: 100%;
   border-collapse: collapse;
+}
+
+.tasks-table--awards {
+  overflow-x: auto;
+}
+
+.tasks-table__col--title {
+  width: 60%;
+}
+
+.tasks-table__col--score,
+.tasks-table__col--description {
+  width: 20%;
 }
 
 .tasks-table th {
@@ -685,9 +705,32 @@ button {
   text-align: right;
 }
 
+.tasks-table--awards th:nth-child(2),
+.tasks-table--awards td:nth-child(2),
+.tasks-table--awards th:nth-child(3),
+.tasks-table--awards td:nth-child(3) {
+  text-align: left;
+}
+
 .tasks-table__score {
   color: var(--gold-bright);
   font-weight: 700;
+}
+
+.awards-groups {
+  display: grid;
+  gap: 28px;
+  margin-top: 34px;
+}
+
+.awards-group__title {
+  margin: 0 0 14px;
+  font-size: clamp(22px, 2.4vw, 30px);
+  color: var(--gold-bright);
+}
+
+.awards-group .tasks-table {
+  margin-top: 0;
 }
 
 .state-box {
@@ -1166,6 +1209,47 @@ button {
   .tasks-table th:last-child,
   .tasks-table td:last-child {
     width: 110px;
+  }
+
+  .tasks-table--awards table,
+  .tasks-table--awards colgroup,
+  .tasks-table--awards tbody,
+  .tasks-table--awards tr,
+  .tasks-table--awards td {
+    display: block;
+    width: 100%;
+  }
+
+  .tasks-table--awards thead {
+    display: none;
+  }
+
+  .tasks-table--awards tbody {
+    padding: 10px 0;
+  }
+
+  .tasks-table--awards tr {
+    padding: 10px 0;
+    border-top: 1px solid rgba(200, 166, 108, 0.14);
+  }
+
+  .tasks-table--awards tr:first-child {
+    border-top: 0;
+  }
+
+  .tasks-table--awards td {
+    padding: 8px 16px;
+    border-top: 0;
+  }
+
+  .tasks-table--awards td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 4px;
+    font-size: 11px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #d8bf8e;
   }
 
   .modal {

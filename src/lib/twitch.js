@@ -27,6 +27,34 @@ export function extractTwitchClipSlug(value) {
   return input;
 }
 
+export function extractTwitchChannelLogin(value) {
+  const input = value.trim();
+
+  if (!input) {
+    return "";
+  }
+
+  if (!input.includes("http")) {
+    return input.replace(/^@/, "").trim().toLowerCase();
+  }
+
+  try {
+    const url = new URL(input);
+    if (!url.hostname.includes("twitch.tv")) {
+      return "";
+    }
+
+    const [firstSegment = ""] = url.pathname.split("/").filter(Boolean);
+    if (!firstSegment || firstSegment.toLowerCase() === "videos") {
+      return "";
+    }
+
+    return firstSegment.replace(/^@/, "").trim().toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
 export async function fetchTwitchClipThumbnailBySlug(value) {
   const slug = extractTwitchClipSlug(value);
   if (!slug) {
@@ -43,6 +71,23 @@ export async function fetchTwitchClipThumbnailBySlug(value) {
 
   const payload = await response.json();
   return payload.thumbnailUrl || "";
+}
+
+export async function fetchTwitchChannelProfile(value) {
+  const login = extractTwitchChannelLogin(value);
+  if (!login) {
+    throw new Error("Не удалось определить Twitch-аккаунт из ссылки.");
+  }
+
+  const response = await fetch(
+    `/api/twitch/channel-profile?login=${encodeURIComponent(login)}`
+  );
+
+  if (!response.ok) {
+    throw new Error("Не удалось подтянуть профиль участника из Twitch.");
+  }
+
+  return response.json();
 }
 
 export function getTwitchEmbedParent() {
