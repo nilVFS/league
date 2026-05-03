@@ -56,9 +56,17 @@ export function extractTwitchChannelLogin(value) {
 }
 
 export async function fetchTwitchClipThumbnailBySlug(value) {
+  const clipData = await fetchTwitchClipData(value);
+  return clipData.thumbnailUrl || "";
+}
+
+export async function fetchTwitchClipData(value) {
   const slug = extractTwitchClipSlug(value);
   if (!slug) {
-    return "";
+    return {
+      title: "",
+      thumbnailUrl: "",
+    };
   }
 
   const response = await fetch(
@@ -70,7 +78,10 @@ export async function fetchTwitchClipThumbnailBySlug(value) {
   }
 
   const payload = await response.json();
-  return payload.thumbnailUrl || "";
+  return {
+    title: payload.title || "",
+    thumbnailUrl: payload.thumbnailUrl || "",
+  };
 }
 
 export async function fetchTwitchChannelProfile(value) {

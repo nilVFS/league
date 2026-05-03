@@ -22,7 +22,7 @@ async function getAppAccessToken(clientId, clientSecret) {
   return payload.access_token || "";
 }
 
-async function getClipThumbnail(slug, clientId, accessToken) {
+async function getClipData(slug, clientId, accessToken) {
   const response = await fetch(
     `${TWITCH_CLIPS_URL}?id=${encodeURIComponent(slug)}`,
     {
@@ -38,7 +38,12 @@ async function getClipThumbnail(slug, clientId, accessToken) {
   }
 
   const payload = await response.json();
-  return payload?.data?.[0]?.thumbnail_url || "";
+  const clip = payload?.data?.[0];
+
+  return {
+    title: clip?.title || "",
+    thumbnailUrl: clip?.thumbnail_url || "",
+  };
 }
 
 export default async function handler(request, response) {
@@ -63,11 +68,12 @@ export default async function handler(request, response) {
 
   try {
     const accessToken = await getAppAccessToken(clientId, clientSecret);
-    const thumbnailUrl = await getClipThumbnail(slug, clientId, accessToken);
+    const clipData = await getClipData(slug, clientId, accessToken);
 
     return response.status(200).json({
       slug,
-      thumbnailUrl,
+      title: clipData.title,
+      thumbnailUrl: clipData.thumbnailUrl,
     });
   } catch (error) {
     return response.status(500).json({

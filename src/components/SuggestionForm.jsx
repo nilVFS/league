@@ -3,6 +3,7 @@ import { collectionNames, createDocument } from "../lib/content";
 import {
   extractTwitchClipSlug,
   fetchTwitchChannelProfile,
+  fetchTwitchClipData,
 } from "../lib/twitch";
 
 const initialClipState = {
@@ -105,15 +106,24 @@ function SuggestionForm({ type }) {
 
     try {
       if (isClip) {
-        const title = clipForm.title.trim();
         const clipSlug = extractTwitchClipSlug(clipForm.clipSlug);
-
-        if (!title) {
-          throw new Error("Укажи название клипа.");
-        }
 
         if (!clipSlug) {
           throw new Error("Укажи ссылку на Twitch Clip.");
+        }
+
+        const manualTitle = clipForm.title.trim();
+        let autoTitle = "";
+        try {
+          const clipData = await fetchTwitchClipData(clipSlug);
+          autoTitle = clipData.title || "";
+        } catch {
+          autoTitle = "";
+        }
+
+        const title = manualTitle || autoTitle;
+        if (!title) {
+          throw new Error("Не удалось определить название клипа. Укажи его вручную.");
         }
 
         await createDocument(collectionNames.suggestions, {
@@ -203,7 +213,7 @@ function SuggestionForm({ type }) {
                       onChange={(event) =>
                         setClipForm((current) => ({ ...current, title: event.target.value }))
                       }
-                      required
+                      placeholder="Необязательно. Если пусто, подтянем из Twitch."
                       type="text"
                       value={clipForm.title}
                     />
