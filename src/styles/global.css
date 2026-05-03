@@ -119,6 +119,12 @@ button {
   border-color: rgba(200, 166, 108, 0.26);
 }
 
+@media screen and (max-width: 450px) {
+  .site-header__logo {
+    display: none;
+  }
+}
+
 .site-header__logo {
   text-decoration: none;
   font-size: 20px;
