@@ -13,7 +13,7 @@ function ClipsPage() {
   return (
     <main className="inner-page">
       <PageIntroCard
-        description="Здесь собраны клипы в формате карточек. Список загружается из Firebase, а при нажатии открывается popup с выбранным видео."
+        description="Здесь собраны клипы участников. Вы можете предлагать свои клипы."
         eyebrow="Клипы"
         title="Подборка лучших клипов"
         titleAction={<SuggestionForm type="clip" />}

@@ -12,7 +12,7 @@ function AwardsPage() {
   return (
     <main className="inner-page">
       <PageIntroCard
-        description="Список наград и баллов теперь загружается из Firebase, так что его можно обновлять через скрытую панель управления."
+        description="Список наград и баллов, как мне не будет лень, тогда и добавлю."
         eyebrow="Награды"
         title="Список наград и баллов"
       >

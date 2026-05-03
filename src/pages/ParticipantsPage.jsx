@@ -13,7 +13,7 @@ function ParticipantsPage() {
   return (
     <main className="inner-page">
       <PageIntroCard
-        description="Карточки участников со ссылками на их Twitch-каналы. Список загружается из Firebase и обновляется через панель управления."
+        description="Легенды твича"
         eyebrow="Участники"
         title="Участники сообщества"
         titleAction={<SuggestionForm type="participant" />}
