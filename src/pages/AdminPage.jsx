@@ -970,6 +970,17 @@ function AdminPage() {
                               {suggestion.type === "clip" ? "Клип" : "Участник"}:{" "}
                               {suggestion.title || suggestion.name}
                             </strong>
+                            {suggestion.clipSlug ? (
+                              <div className="admin-list__meta">
+                                <a
+                                  href={`https://clips.twitch.tv/${suggestion.clipSlug}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  https://clips.twitch.tv/{suggestion.clipSlug}
+                                </a>
+                              </div>
+                            ) : null}
                             <div className="admin-list__meta">
                               {suggestion.preview || suggestion.channel || suggestion.description}
                             </div>
