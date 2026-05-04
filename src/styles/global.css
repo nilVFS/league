@@ -745,6 +745,15 @@ button {
   padding: 18px 18px 20px;
 }
 
+.clip-card__channel {
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .clip-card__title,
 .participant-card__name {
   margin-bottom: 7px;
@@ -753,7 +762,12 @@ button {
   color: var(--gold-bright);
 }
 
-.clip-card__text,
+.clip-card__text {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
 .participant-card__channel {
   font-size: 14px;
   line-height: 1.7;
@@ -1111,6 +1125,15 @@ button {
   border: 1px solid rgba(200, 166, 108, 0.14);
   border-radius: 16px;
   background: rgba(17, 11, 6, 0.46);
+}
+
+.admin-list__channel {
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .admin-list__meta {

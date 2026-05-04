@@ -22,7 +22,8 @@ function ClipsPage() {
       (clip) =>
         clip.title?.toLowerCase().includes(query) ||
         clip.description?.toLowerCase().includes(query) ||
-        clip.preview?.toLowerCase().includes(query)
+        clip.preview?.toLowerCase().includes(query) ||
+        clip.broadcasterName?.toLowerCase().includes(query)
     );
   }, [clips, searchQuery]);
 
@@ -114,6 +115,9 @@ function ClipsPage() {
                       )}
                     </div>
                     <div className="clip-card__body">
+                      {clip.broadcasterName ? (
+                        <div className="clip-card__channel">{clip.broadcasterName}</div>
+                      ) : null}
                       <div className="clip-card__title">{clip.title}</div>
                       <div className="clip-card__text">
                         {clip.preview || clip.description || "Откройте клип, чтобы посмотреть запись."}

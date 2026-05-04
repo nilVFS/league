@@ -44,6 +44,7 @@ async function getClipData(slug, clientId, accessToken) {
     title: clip?.title || "",
     thumbnailUrl: clip?.thumbnail_url || "",
     createdAt: clip?.created_at || "",
+    broadcasterName: clip?.broadcaster_name || "",
   };
 }
 

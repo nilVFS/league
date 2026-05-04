@@ -29,6 +29,7 @@ const clipInitialState = {
   description: "",
   clipSlug: "",
   thumbnailUrl: "",
+  broadcasterName: "",
 };
 
 const participantInitialState = {
@@ -229,13 +230,16 @@ function AdminPage() {
       const manualTitle = clipForm.title.trim();
       let autoTitle = "";
       let autoCreatedAt = "";
+      let autoBroadcasterName = "";
       try {
         const clipData = await fetchTwitchClipData(clipSlug);
         autoTitle = clipData.title || "";
         autoCreatedAt = clipData.createdAt || "";
+        autoBroadcasterName = clipData.broadcasterName || "";
       } catch {
         autoTitle = "";
         autoCreatedAt = "";
+        autoBroadcasterName = "";
       }
 
       const title = manualTitle || autoTitle;
@@ -257,6 +261,7 @@ function AdminPage() {
         clipSlug,
         thumbnailUrl,
         createdAt: autoCreatedAt,
+        broadcasterName: autoBroadcasterName,
       };
 
       if (editingClipId) {
@@ -360,13 +365,16 @@ function AdminPage() {
         const clipSlug = suggestion.clipSlug || "";
         let autoTitle = "";
         let autoCreatedAt = "";
+        let autoBroadcasterName = "";
         try {
           const clipData = await fetchTwitchClipData(clipSlug);
           autoTitle = clipData.title || "";
           autoCreatedAt = clipData.createdAt || "";
+          autoBroadcasterName = clipData.broadcasterName || "";
         } catch {
           autoTitle = "";
           autoCreatedAt = "";
+          autoBroadcasterName = "";
         }
         const thumbnailUrl = await resolveClipThumbnailUrl(
           clipSlug,
@@ -380,6 +388,7 @@ function AdminPage() {
           clipSlug,
           thumbnailUrl,
           createdAt: autoCreatedAt,
+          broadcasterName: suggestion.broadcasterName || autoBroadcasterName || "",
         });
       }
 
@@ -629,6 +638,9 @@ function AdminPage() {
                     {clipsState.items.map((clip) => (
                       <div className="admin-list__item" key={clip.id}>
                         <div>
+                          {clip.broadcasterName ? (
+                            <div className="admin-list__channel">{clip.broadcasterName}</div>
+                          ) : null}
                           <strong>{clip.title}</strong>
                           <div className="admin-list__meta">{clip.preview}</div>
                         </div>
@@ -643,6 +655,7 @@ function AdminPage() {
                                 description: clip.description || "",
                                 clipSlug: clip.clipSlug || "",
                                 thumbnailUrl: clip.thumbnailUrl || "",
+                                broadcasterName: clip.broadcasterName || "",
                               });
                               setActiveTab("clips");
                             }}
