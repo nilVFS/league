@@ -1,9 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import PageIntroCard from "../components/PageIntroCard";
 import SuggestionForm from "../components/SuggestionForm";
 import useCollectionData from "../hooks/useCollectionData";
 import { collectionNames } from "../lib/content";
-import { fetchTwitchChannelProfile } from "../lib/twitch";
+import {
+  extractTwitchChannelLogin,
+  fetchTwitchChannelProfile,
+  fetchTwitchLiveStatuses,
+} from "../lib/twitch";
 
 function ParticipantsPage() {
   const {
@@ -12,6 +16,23 @@ function ParticipantsPage() {
     error,
   } = useCollectionData(collectionNames.participants);
   const [resolvedProfiles, setResolvedProfiles] = useState({});
+  const [liveStatuses, setLiveStatuses] = useState({});
+  const sortedParticipants = useMemo(() => {
+    return [...participants].sort((left, right) => {
+      const leftProfile = resolvedProfiles[left.id];
+      const rightProfile = resolvedProfiles[right.id];
+      const leftLogin = leftProfile?.login || extractTwitchChannelLogin(left.href);
+      const rightLogin = rightProfile?.login || extractTwitchChannelLogin(right.href);
+      const leftIsLive = Number(Boolean(leftLogin && liveStatuses[leftLogin]));
+      const rightIsLive = Number(Boolean(rightLogin && liveStatuses[rightLogin]));
+
+      if (leftIsLive !== rightIsLive) {
+        return rightIsLive - leftIsLive;
+      }
+
+      return 0;
+    });
+  }, [participants, resolvedProfiles, liveStatuses]);
 
   useEffect(() => {
     const unresolvedParticipants = participants.filter(
@@ -55,6 +76,46 @@ function ParticipantsPage() {
     };
   }, [participants, resolvedProfiles]);
 
+  useEffect(() => {
+    const participantLinks = participants
+      .map((participant) => participant.href)
+      .filter((href) => extractTwitchChannelLogin(href));
+
+    if (!participantLinks.length) {
+      setLiveStatuses({});
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const loadLiveStatuses = async () => {
+      try {
+        const nextStatuses = await fetchTwitchLiveStatuses(participantLinks);
+        if (!cancelled) {
+          setLiveStatuses(nextStatuses);
+        }
+      } catch {
+        if (!cancelled) {
+          setLiveStatuses({});
+        }
+      }
+    };
+
+    let intervalId = null;
+    const fiveMinuteTimerId = window.setTimeout(() => {
+      loadLiveStatuses();
+      intervalId = window.setInterval(loadLiveStatuses, 30 * 60 * 1000);
+    }, 5 * 60 * 1000);
+
+    loadLiveStatuses();
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(fiveMinuteTimerId);
+      window.clearInterval(intervalId);
+    };
+  }, [participants]);
+
   return (
     <main className="inner-page">
       <PageIntroCard
@@ -69,7 +130,7 @@ function ParticipantsPage() {
         {!loading && !error ? (
           participants.length ? (
             <div className="participants-grid">
-              {participants.map((participant) => {
+              {sortedParticipants.map((participant) => {
                 const profile = resolvedProfiles[participant.id];
                 const participantName = participant.name || profile?.displayName || "Участник";
                 const participantChannel =
@@ -79,15 +140,21 @@ function ParticipantsPage() {
                 const participantImageUrl =
                   participant.imageUrl || profile?.profileImageUrl || "";
                 const participantDescription = participant.description || "";
+                const participantLogin =
+                  profile?.login || extractTwitchChannelLogin(participant.href);
+                const isLive = Boolean(participantLogin && liveStatuses[participantLogin]);
 
                 return (
                   <a
-                    className="participant-card"
+                    className={`participant-card ${
+                      isLive ? "participant-card--live" : ""
+                    }`}
                     href={participant.href}
                     key={participant.id}
                     rel="noreferrer noopener"
                     target="_blank"
                   >
+                    {isLive ? <div className="participant-card__live-badge">LIVE</div> : null}
                     {participantImageUrl ? (
                       <img
                         alt={`Аватар ${participantName}`}

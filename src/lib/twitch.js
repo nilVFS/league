@@ -101,6 +101,33 @@ export async function fetchTwitchChannelProfile(value) {
   return response.json();
 }
 
+export async function fetchTwitchLiveStatuses(values) {
+  const logins = Array.from(
+    new Set(
+      values
+        .map((value) => extractTwitchChannelLogin(value))
+        .filter(Boolean)
+    )
+  );
+
+  if (!logins.length) {
+    return {};
+  }
+
+  const search = new URLSearchParams();
+  logins.forEach((login) => {
+    search.append("login", login);
+  });
+
+  const response = await fetch(`/api/twitch/live-status?${search.toString()}`);
+  if (!response.ok) {
+    throw new Error("Не удалось проверить live-статусы участников.");
+  }
+
+  const payload = await response.json();
+  return payload.statuses || {};
+}
+
 export function getTwitchEmbedParent() {
   if (typeof window === "undefined") {
     return "localhost";
