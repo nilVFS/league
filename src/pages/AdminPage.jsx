@@ -981,6 +981,17 @@ function AdminPage() {
                                 </a>
                               </div>
                             ) : null}
+                            {suggestion.href ? (
+                              <div className="admin-list__meta">
+                                <a
+                                  href={suggestion.href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  {suggestion.href}
+                                </a>
+                              </div>
+                            ) : null}
                             <div className="admin-list__meta">
                               {suggestion.preview || suggestion.channel || suggestion.description}
                             </div>
