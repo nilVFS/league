@@ -17,6 +17,7 @@ function ParticipantsPage() {
   } = useCollectionData(collectionNames.participants);
   const [resolvedProfiles, setResolvedProfiles] = useState({});
   const [liveStatuses, setLiveStatuses] = useState({});
+
   const sortedParticipants = useMemo(() => {
     return [...participants].sort((left, right) => {
       const leftProfile = resolvedProfiles[left.id];
@@ -35,65 +36,67 @@ function ParticipantsPage() {
   }, [participants, resolvedProfiles, liveStatuses]);
 
   useEffect(() => {
-    const unresolvedParticipants = participants.filter(
-      (participant) =>
-        participant.href &&
-        (!participant.name || !participant.channel || !participant.imageUrl) &&
-        !Object.prototype.hasOwnProperty.call(resolvedProfiles, participant.id)
-    );
-
-    if (!unresolvedParticipants.length) {
+    if (!participants.length) {
       return;
     }
 
     let cancelled = false;
 
-    Promise.all(
-      unresolvedParticipants.map(async (participant) => {
-        try {
-          const profile = await fetchTwitchChannelProfile(participant.href);
-          return [participant.id, profile];
-        } catch {
-          return [participant.id, null];
-        }
-      })
-    ).then((entries) => {
-      if (cancelled) {
-        return;
-      }
+    const loadAllData = async () => {
+      // Собираем всех участников, которым нужны профили
+      const unresolvedParticipants = participants.filter(
+        (participant) =>
+          participant.href &&
+          (!participant.name || !participant.channel || !participant.imageUrl) &&
+          !Object.prototype.hasOwnProperty.call(resolvedProfiles, participant.id)
+      );
 
-      setResolvedProfiles((current) => {
-        const next = { ...current };
-        entries.forEach(([participantId, profile]) => {
-          next[participantId] = profile;
-        });
-        return next;
-      });
-    });
+      // Собираем все ссылки для проверки статуса онлайн
+      const participantLinks = participants
+        .map((participant) => participant.href)
+        .filter((href) => extractTwitchChannelLogin(href));
 
-    return () => {
-      cancelled = true;
-    };
-  }, [participants, resolvedProfiles]);
+      // Загружаем профили и статусы онлайн параллельно
+      const profilesPromise = unresolvedParticipants.length
+        ? Promise.all(
+            unresolvedParticipants.map(async (participant) => {
+              try {
+                const profile = await fetchTwitchChannelProfile(participant.href);
+                return [participant.id, profile];
+              } catch {
+                return [participant.id, null];
+              }
+            })
+          )
+        : Promise.resolve([]);
 
-  useEffect(() => {
-    const participantLinks = participants
-      .map((participant) => participant.href)
-      .filter((href) => extractTwitchChannelLogin(href));
+      const liveStatusesPromise = participantLinks.length
+        ? fetchTwitchLiveStatuses(participantLinks)
+        : Promise.resolve({});
 
-    if (!participantLinks.length) {
-      setLiveStatuses({});
-      return undefined;
-    }
-
-    let cancelled = false;
-
-    const loadLiveStatuses = async () => {
       try {
-        const nextStatuses = await fetchTwitchLiveStatuses(participantLinks);
-        if (!cancelled) {
-          setLiveStatuses(nextStatuses);
+        const [profileEntries, nextStatuses] = await Promise.all([
+          profilesPromise,
+          liveStatusesPromise,
+        ]);
+
+        if (cancelled) {
+          return;
         }
+
+        // Обновляем профили, если есть новые
+        if (profileEntries.length) {
+          setResolvedProfiles((current) => {
+            const next = { ...current };
+            profileEntries.forEach(([participantId, profile]) => {
+              next[participantId] = profile;
+            });
+            return next;
+          });
+        }
+
+        // Обновляем статусы онлайн
+        setLiveStatuses(nextStatuses);
       } catch {
         if (!cancelled) {
           setLiveStatuses({});
@@ -101,13 +104,33 @@ function ParticipantsPage() {
       }
     };
 
+    loadAllData();
+
+    // Настраиваем периодическое обновление статуса онлайн
     let intervalId = null;
     const fiveMinuteTimerId = window.setTimeout(() => {
-      loadLiveStatuses();
-      intervalId = window.setInterval(loadLiveStatuses, 30 * 60 * 1000);
-    }, 5 * 60 * 1000);
+      const refreshLiveStatuses = async () => {
+        const participantLinksForRefresh = participants
+          .map((participant) => participant.href)
+          .filter((href) => extractTwitchChannelLogin(href));
 
-    loadLiveStatuses();
+        if (!participantLinksForRefresh.length) {
+          return;
+        }
+
+        try {
+          const nextStatuses = await fetchTwitchLiveStatuses(participantLinksForRefresh);
+          if (!cancelled) {
+            setLiveStatuses(nextStatuses);
+          }
+        } catch {
+          // Игнорируем ошибки при обновлении
+        }
+      };
+
+      refreshLiveStatuses();
+      intervalId = window.setInterval(refreshLiveStatuses, 30 * 60 * 1000);
+    }, 5 * 60 * 1000);
 
     return () => {
       cancelled = true;
