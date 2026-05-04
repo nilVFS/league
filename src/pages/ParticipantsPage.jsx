@@ -129,7 +129,7 @@ function ParticipantsPage() {
       };
 
       refreshLiveStatuses();
-      intervalId = window.setInterval(refreshLiveStatuses, 30 * 60 * 1000);
+      intervalId = window.setInterval(refreshLiveStatuses, 10 * 60 * 1000);
     }, 5 * 60 * 1000);
 
     return () => {
