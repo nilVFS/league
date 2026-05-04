@@ -163,7 +163,6 @@ function SuggestionForm({ type }) {
 
       reset();
       setOpen(false);
-      setStatus("Спасибо. Предложение отправлено на модерацию.");
     } catch (error) {
       setStatus(error.message || "Не удалось отправить предложение.");
     } finally {
