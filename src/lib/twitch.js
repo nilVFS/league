@@ -66,6 +66,7 @@ export async function fetchTwitchClipData(value) {
     return {
       title: "",
       thumbnailUrl: "",
+      createdAt: "",
     };
   }
 
@@ -81,6 +82,7 @@ export async function fetchTwitchClipData(value) {
   return {
     title: payload.title || "",
     thumbnailUrl: payload.thumbnailUrl || "",
+    createdAt: payload.createdAt || "",
   };
 }
 

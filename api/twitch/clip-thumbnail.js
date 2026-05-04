@@ -43,6 +43,7 @@ async function getClipData(slug, clientId, accessToken) {
   return {
     title: clip?.title || "",
     thumbnailUrl: clip?.thumbnail_url || "",
+    createdAt: clip?.created_at || "",
   };
 }
 

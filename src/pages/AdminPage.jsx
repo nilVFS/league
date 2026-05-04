@@ -228,11 +228,14 @@ function AdminPage() {
 
       const manualTitle = clipForm.title.trim();
       let autoTitle = "";
+      let autoCreatedAt = "";
       try {
         const clipData = await fetchTwitchClipData(clipSlug);
         autoTitle = clipData.title || "";
+        autoCreatedAt = clipData.createdAt || "";
       } catch {
         autoTitle = "";
+        autoCreatedAt = "";
       }
 
       const title = manualTitle || autoTitle;
@@ -253,6 +256,7 @@ function AdminPage() {
         description,
         clipSlug,
         thumbnailUrl,
+        createdAt: autoCreatedAt,
       };
 
       if (editingClipId) {
@@ -355,11 +359,14 @@ function AdminPage() {
       if (suggestion.type === "clip") {
         const clipSlug = suggestion.clipSlug || "";
         let autoTitle = "";
+        let autoCreatedAt = "";
         try {
           const clipData = await fetchTwitchClipData(clipSlug);
           autoTitle = clipData.title || "";
+          autoCreatedAt = clipData.createdAt || "";
         } catch {
           autoTitle = "";
+          autoCreatedAt = "";
         }
         const thumbnailUrl = await resolveClipThumbnailUrl(
           clipSlug,
@@ -372,6 +379,7 @@ function AdminPage() {
           description: suggestion.description || "",
           clipSlug,
           thumbnailUrl,
+          createdAt: autoCreatedAt,
         });
       }
 
@@ -853,7 +861,7 @@ function AdminPage() {
                       />
                     </label>
                     <label className="admin-field">
-                      <span>Описание</span>
+                      <span>Бонус</span>
                       <textarea
                         onChange={(event) =>
                           setAwardForm((current) => ({

@@ -51,7 +51,7 @@ function AwardsPage() {
                         <tr>
                           <th>Награда</th>
                           <th>Баллы</th>
-                          <th>Описание</th>
+                          <th>Бонус</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -61,7 +61,7 @@ function AwardsPage() {
                             <td className="tasks-table__score" data-label="Баллы">
                               {item.score}
                             </td>
-                            <td data-label="Описание">{item.description || "—"}</td>
+                            <td data-label="Бонус">{item.description || "—"}</td>
                           </tr>
                         ))}
                       </tbody>
