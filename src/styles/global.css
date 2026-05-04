@@ -580,6 +580,40 @@ button {
   margin-top: 34px;
 }
 
+.clips-search {
+  margin-top: 24px;
+  margin-bottom: 16px;
+}
+
+.clips-search__input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--line-warm);
+  background: rgba(28, 19, 11, 0.74);
+  color: var(--text-primary);
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.clips-search__input:focus {
+  border-color: var(--accent-gold);
+}
+
+.clips-day-group {
+  margin-bottom: 32px;
+}
+
+.clips-day-group__title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--accent-gold);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line-warm);
+}
+
 .clips-grid {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
