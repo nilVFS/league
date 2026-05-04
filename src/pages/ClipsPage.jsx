@@ -9,57 +9,25 @@ import {
   fetchTwitchClipThumbnailBySlug,
 } from "../lib/twitch";
 
-function getDayNumber(dateString) {
-  if (!dateString) return null;
-  const date = new Date(dateString);
-  return date.getDate();
-}
-
-function getMoscowDay(dateString) {
-  if (!dateString) return 1;
-  const date = new Date(dateString);
-  const moscowTime = new Date(date.toLocaleString("en-US", { timeZone: "Europe/Moscow" }));
-  return moscowTime.getDate();
-}
-
 function ClipsPage() {
   const { items: clips, loading, error } = useCollectionData(collectionNames.clips);
   const [selectedClip, setSelectedClip] = useState(null);
   const [resolvedThumbnails, setResolvedThumbnails] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
 
-  const clipsWithDates = useMemo(() => {
-    return clips.map((clip) => {
-      const dayNumber = getMoscowDay(clip.createdAt);
-      return { ...clip, dayNumber: dayNumber || 1 };
-    });
-  }, [clips]);
-
   const filteredClips = useMemo(() => {
-    if (!searchQuery.trim()) return clipsWithDates;
+    if (!searchQuery.trim()) return clips;
     const query = searchQuery.toLowerCase().trim();
-    return clipsWithDates.filter(
+    return clips.filter(
       (clip) =>
         clip.title?.toLowerCase().includes(query) ||
         clip.description?.toLowerCase().includes(query) ||
         clip.preview?.toLowerCase().includes(query)
     );
-  }, [clipsWithDates, searchQuery]);
-
-  const groupedClips = useMemo(() => {
-    const groups = new Map();
-    filteredClips.forEach((clip) => {
-      const dayLabel = `День ${clip.dayNumber || 1}`;
-      if (!groups.has(dayLabel)) {
-        groups.set(dayLabel, []);
-      }
-      groups.get(dayLabel).push(clip);
-    });
-    return Array.from(groups.entries());
-  }, [filteredClips]);
+  }, [clips, searchQuery]);
 
   useEffect(() => {
-    const clipsWithoutThumbnail = clipsWithDates.filter(
+    const clipsWithoutThumbnail = filteredClips.filter(
       (clip) =>
         clip.clipSlug &&
         !clip.thumbnailUrl &&
@@ -98,7 +66,7 @@ function ClipsPage() {
     return () => {
       cancelled = true;
     };
-  }, [clipsWithDates, resolvedThumbnails]);
+  }, [filteredClips, resolvedThumbnails]);
 
   return (
     <main className="inner-page">
@@ -124,41 +92,34 @@ function ClipsPage() {
                 />
               </div>
               <div className="clips-grid">
-                {groupedClips.map(([dayLabel, dayClips]) => (
-                  <div key={dayLabel} className="clips-day-group">
-                    <h2 className="clips-day-group__title">{dayLabel}</h2>
-                    <div className="clips-grid">
-                      {dayClips.map((clip) => (
-                        <article className="clip-card" key={clip.id} onClick={() => setSelectedClip(clip)}>
-                          <div className="clip-card__preview">
-                            {clip.thumbnailUrl || resolvedThumbnails[clip.id] ? (
-                              <img
-                                alt={clip.title}
-                                className="clip-card__thumbnail"
-                                src={clip.thumbnailUrl || resolvedThumbnails[clip.id]}
-                              />
-                            ) : clip.clipSlug ? (
-                              <div className="clip-card__placeholder">
-                                <span>Twitch Clip</span>
-                                <strong>{clip.title || extractTwitchClipSlug(clip.clipSlug)}</strong>
-                              </div>
-                            ) : (
-                              <div className="clip-card__placeholder">
-                                <span>Twitch Clip</span>
-                                <strong>{clip.title || "Ссылка не указана"}</strong>
-                              </div>
-                            )}
-                          </div>
-                          <div className="clip-card__body">
-                            <div className="clip-card__title">{clip.title}</div>
-                            <div className="clip-card__text">
-                              {clip.preview || clip.description || "Откройте клип, чтобы посмотреть запись."}
-                            </div>
-                          </div>
-                        </article>
-                      ))}
+                {filteredClips.map((clip) => (
+                  <article className="clip-card" key={clip.id} onClick={() => setSelectedClip(clip)}>
+                    <div className="clip-card__preview">
+                      {clip.thumbnailUrl || resolvedThumbnails[clip.id] ? (
+                        <img
+                          alt={clip.title}
+                          className="clip-card__thumbnail"
+                          src={clip.thumbnailUrl || resolvedThumbnails[clip.id]}
+                        />
+                      ) : clip.clipSlug ? (
+                        <div className="clip-card__placeholder">
+                          <span>Twitch Clip</span>
+                          <strong>{clip.title || extractTwitchClipSlug(clip.clipSlug)}</strong>
+                        </div>
+                      ) : (
+                        <div className="clip-card__placeholder">
+                          <span>Twitch Clip</span>
+                          <strong>{clip.title || "Ссылка не указана"}</strong>
+                        </div>
+                      )}
                     </div>
-                  </div>
+                    <div className="clip-card__body">
+                      <div className="clip-card__title">{clip.title}</div>
+                      <div className="clip-card__text">
+                        {clip.preview || clip.description || "Откройте клип, чтобы посмотреть запись."}
+                      </div>
+                    </div>
+                  </article>
                 ))}
               </div>
             </>
