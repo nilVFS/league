@@ -114,11 +114,14 @@ function SuggestionForm({ type }) {
 
         const manualTitle = clipForm.title.trim();
         let autoTitle = "";
+        let broadcasterName = "";
         try {
           const clipData = await fetchTwitchClipData(clipSlug);
           autoTitle = clipData.title || "";
+          broadcasterName = clipData.broadcasterName || "";
         } catch {
           autoTitle = "";
+          broadcasterName = "";
         }
 
         const title = manualTitle || autoTitle;
@@ -134,6 +137,7 @@ function SuggestionForm({ type }) {
           description: clipForm.description.trim() || clipForm.preview.trim() || title,
           clipSlug,
           thumbnailUrl: clipForm.thumbnailUrl.trim(),
+          broadcasterName,
           contact: clipForm.contact.trim(),
         });
       } else {
