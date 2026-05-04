@@ -212,42 +212,6 @@ function SuggestionForm({ type }) {
               {isClip ? (
                 <>
                   <label className="admin-field">
-                    <span>Название клипа</span>
-                    <input
-                      onChange={(event) =>
-                        setClipForm((current) => ({ ...current, title: event.target.value }))
-                      }
-                      placeholder="Необязательно. Если пусто, подтянем из Twitch."
-                      type="text"
-                      value={clipForm.title}
-                    />
-                  </label>
-                  <label className="admin-field">
-                    <span>Короткий текст</span>
-                    <textarea
-                      onChange={(event) =>
-                        setClipForm((current) => ({ ...current, preview: event.target.value }))
-                      }
-                      placeholder="Необязательно. Если пусто, подставим название."
-                      rows="3"
-                      value={clipForm.preview}
-                    />
-                  </label>
-                  <label className="admin-field">
-                    <span>Описание</span>
-                    <textarea
-                      onChange={(event) =>
-                        setClipForm((current) => ({
-                          ...current,
-                          description: event.target.value,
-                        }))
-                      }
-                      placeholder="Необязательно. Если пусто, возьмём короткий текст."
-                      rows="4"
-                      value={clipForm.description}
-                    />
-                  </label>
-                  <label className="admin-field">
                     <span>Ссылка на Twitch Clip или slug</span>
                     <input
                       onChange={(event) =>
@@ -256,20 +220,6 @@ function SuggestionForm({ type }) {
                       required
                       type="text"
                       value={clipForm.clipSlug}
-                    />
-                  </label>
-                  <label className="admin-field">
-                    <span>Ссылка на превью</span>
-                    <input
-                      onChange={(event) =>
-                        setClipForm((current) => ({
-                          ...current,
-                          thumbnailUrl: event.target.value,
-                        }))
-                      }
-                      placeholder="Необязательно"
-                      type="url"
-                      value={clipForm.thumbnailUrl}
                     />
                   </label>
                 </>
