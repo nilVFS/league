@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import ClipModal from "../components/ClipModal";
 import PageIntroCard from "../components/PageIntroCard";
 import SuggestionForm from "../components/SuggestionForm";
@@ -13,22 +13,9 @@ function ClipsPage() {
   const { items: clips, loading, error } = useCollectionData(collectionNames.clips);
   const [selectedClip, setSelectedClip] = useState(null);
   const [resolvedThumbnails, setResolvedThumbnails] = useState({});
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const filteredClips = useMemo(() => {
-    if (!searchQuery.trim()) return clips;
-    const query = searchQuery.toLowerCase().trim();
-    return clips.filter(
-      (clip) =>
-        clip.title?.toLowerCase().includes(query) ||
-        clip.description?.toLowerCase().includes(query) ||
-        clip.preview?.toLowerCase().includes(query) ||
-        clip.broadcasterName?.toLowerCase().includes(query)
-    );
-  }, [clips, searchQuery]);
 
   useEffect(() => {
-    const clipsWithoutThumbnail = filteredClips.filter(
+    const clipsWithoutThumbnail = clips.filter(
       (clip) =>
         clip.clipSlug &&
         !clip.thumbnailUrl &&
@@ -67,7 +54,7 @@ function ClipsPage() {
     return () => {
       cancelled = true;
     };
-  }, [filteredClips, resolvedThumbnails]);
+  }, [clips, resolvedThumbnails]);
 
   return (
     <main className="inner-page">
@@ -82,19 +69,9 @@ function ClipsPage() {
 
         {!loading && !error ? (
           clips.length ? (
-            <>
-              <div className="clips-search">
-                <input
-                  type="text"
-                  placeholder="Поиск клипов..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="clips-search__input"
-                />
-              </div>
-              <div className="clips-grid">
-                {filteredClips.map((clip) => (
-                  <article className="clip-card" key={clip.id} onClick={() => setSelectedClip(clip)}>
+            <div className="clips-grid">
+              {clips.map((clip) => (
+                <article className="clip-card" key={clip.id} onClick={() => setSelectedClip(clip)}>
                     <div className="clip-card__preview">
                       {clip.thumbnailUrl || resolvedThumbnails[clip.id] ? (
                         <img
@@ -126,7 +103,6 @@ function ClipsPage() {
                   </article>
                 ))}
               </div>
-            </>
           ) : (
             <div className="state-box">Пока нет клипов. Добавь их через `/admin`.</div>
           )
