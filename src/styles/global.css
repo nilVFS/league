@@ -570,7 +570,7 @@ button {
   flex-direction: column;
   gap: 12px;
   transform: translateY(-50%);
-  overflow: hidden;
+  overflow: visible;
   max-height: 350px;
   opacity: 0;
   animation: fadeInUp 1.5s ease-out forwards;
@@ -598,7 +598,7 @@ button {
   transition: all 0.5s ease;
   box-shadow: 0 0 12px rgba(224, 84, 84, 0.2);
   flex-shrink: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .active-streamers-list__item:hover {
@@ -617,9 +617,9 @@ button {
 
 .active-streamers-list__tooltip {
   position: absolute;
-  left: 100%;
+  right: 100%;
   top: 50%;
-  transform: translateY(-50%) translateX(8px);
+  transform: translateY(-50%) translateX(-8px);
   padding: 6px 12px;
   border-radius: 8px;
   background: rgba(28, 19, 11, 0.95);
@@ -632,16 +632,14 @@ button {
   visibility: hidden;
   pointer-events: none;
   transition: all 0.3s ease;
-  margin-left: 10px;
+  margin-right: 10px;
   z-index: 100;
-  display: block;
 }
 
 .active-streamers-list__item:hover .active-streamers-list__tooltip {
   opacity: 1;
   visibility: visible;
   transform: translateY(-50%) translateX(0);
-  display: block;
 }
 
 .cursor-glow {
