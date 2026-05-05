@@ -7,6 +7,20 @@ import { collectionNames } from "../lib/content";
 
 function HomePage() {
   const joinHref = "https://clck.ru/3TQG34";
+  const heroLinks = [
+    {
+      label: "Таблица",
+      href: "https://docs.google.com/spreadsheets/d/1hnTlFLwf_wfy3xviqUAXE9yQ6bFbsgnOqHQo6_WBpas/edit?gid=0#gid=0",
+    },
+    {
+      label: "Описание",
+      href: "https://drive.google.com/file/d/1KHPyTOIIftW5uL5bjNK9GFAkVtio2IEq/view",
+    },
+    {
+      label: "Чат",
+      href: "https://t.me/+J9-liq6gEh0xMWYy",
+    },
+  ];
   const sectionRefs = useRef([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [heroVisible, setHeroVisible] = useState(false);
@@ -274,6 +288,20 @@ function HomePage() {
             }}
             type="button"
           />
+        ))}
+      </div>
+
+      <div className="hero-links" aria-label="Полезные ссылки">
+        {heroLinks.map((link) => (
+          <a
+            key={link.label}
+            href={link.href}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="hero-links__item"
+          >
+            {link.label}
+          </a>
         ))}
       </div>
 
