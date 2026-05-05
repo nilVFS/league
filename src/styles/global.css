@@ -572,6 +572,19 @@ button {
   transform: translateY(-50%);
   overflow: hidden;
   max-height: 260px;
+  opacity: 0;
+  animation: fadeInUp 1s ease 0.5s forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(-45%) translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
 }
 
 .active-streamers-list__item {
@@ -584,6 +597,7 @@ button {
   transition: all 0.5s ease;
   box-shadow: 0 0 12px rgba(224, 84, 84, 0.2);
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .active-streamers-list__item:hover {
@@ -596,6 +610,7 @@ button {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
 .active-streamers-list__tooltip {
