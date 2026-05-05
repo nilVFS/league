@@ -569,10 +569,16 @@ button {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  transform: translateY(-50%);
+  transform: translateY(-46%);
   opacity: 0;
-  animation: fadeInUp 1.5s ease-out forwards;
-  animation-delay: 0.45s;
+  pointer-events: none;
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+
+.hero-links--visible {
+  opacity: 1;
+  transform: translateY(-50%);
+  pointer-events: auto;
 }
 
 .hero-links__item {
@@ -611,10 +617,16 @@ button {
   flex-direction: column;
   align-items: center;
   gap: 16px;
-  transform: translateY(-50%);
+  transform: translateY(-46%);
   opacity: 0;
-  animation: fadeInUp 1.5s ease-out forwards;
-  animation-delay: 0.45s;
+  pointer-events: none;
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+
+.active-streamers-wrapper--visible {
+  opacity: 1;
+  transform: translateY(-50%);
+  pointer-events: auto;
 }
 
 .live-badge {
@@ -636,17 +648,6 @@ button {
   gap: 12px;
   overflow: visible;
   max-height: 350px;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(-45%) translateX(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0);
-  }
 }
 
 .active-streamers-list__item {

@@ -291,7 +291,10 @@ function HomePage() {
         ))}
       </div>
 
-      <div className="hero-links" aria-label="Полезные ссылки">
+      <div
+        className={`hero-links ${ctaReady ? "hero-links--visible" : ""}`}
+        aria-label="Полезные ссылки"
+      >
         {heroLinks.map((link) => (
           <a
             key={link.label}
@@ -307,7 +310,12 @@ function HomePage() {
 
       {/* Список активных стримеров */}
       {displayedStreamers.length > 0 && (
-        <div className="active-streamers-wrapper" aria-label="Активные стримеры">
+        <div
+          className={`active-streamers-wrapper ${
+            ctaReady ? "active-streamers-wrapper--visible" : ""
+          }`}
+          aria-label="Активные стримеры"
+        >
           <div className="live-badge">LIVE</div>
           <div className="active-streamers-list">
             {displayedStreamers.map((streamer) => (
