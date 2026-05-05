@@ -570,10 +570,10 @@ button {
   flex-direction: column;
   gap: 12px;
   transform: translateY(-50%);
-  overflow: hidden;
+  overflow: visible;
   max-height: 260px;
   opacity: 0;
-  animation: fadeInUp 1s ease 0.5s forwards;
+  animation: fadeInUp 1s ease 1.5s forwards;
 }
 
 @keyframes fadeInUp {
@@ -597,7 +597,7 @@ button {
   transition: all 0.5s ease;
   box-shadow: 0 0 12px rgba(224, 84, 84, 0.2);
   flex-shrink: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .active-streamers-list__item:hover {
@@ -632,12 +632,14 @@ button {
   transition: all 0.25s ease;
   margin-right: 10px;
   z-index: 100;
+  display: block;
 }
 
 .active-streamers-list__item:hover .active-streamers-list__tooltip {
   opacity: 1;
   visibility: visible;
   transform: translateY(-50%) translateX(0);
+  display: block;
 }
 
 .cursor-glow {
