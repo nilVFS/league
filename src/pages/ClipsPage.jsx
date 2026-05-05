@@ -28,25 +28,53 @@ function getClipTimestampMs(value) {
   return Number.isNaN(parsed) ? 0 : parsed;
 }
 
+function formatDateKey(timestampMs) {
+  const date = new Date(timestampMs);
+  return date.toLocaleDateString("ru-RU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 function ClipsPage() {
   const { items: clips, loading, error } = useCollectionData(collectionNames.clips);
   const [selectedClip, setSelectedClip] = useState(null);
   const [resolvedThumbnails, setResolvedThumbnails] = useState({});
-  const sortedClips = useMemo(() => {
-    return [...clips].sort((left, right) => {
-      const leftCreatedAtMs = getClipTimestampMs(left.importedAt || left.createdAt);
-      const rightCreatedAtMs = getClipTimestampMs(right.importedAt || right.createdAt);
-      const now = Date.now();
-      const leftIsNew = leftCreatedAtMs && now - leftCreatedAtMs < NEW_CLIP_WINDOW_MS;
-      const rightIsNew = rightCreatedAtMs && now - rightCreatedAtMs < NEW_CLIP_WINDOW_MS;
+  const [searchQuery, setSearchQuery] = useState("");
 
-      if (leftIsNew !== rightIsNew) {
-        return Number(rightIsNew) - Number(leftIsNew);
-      }
-
-      return 0;
+  const filteredClips = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return clips;
+    }
+    const query = searchQuery.toLowerCase().trim();
+    return clips.filter((clip) => {
+      const title = clip.title?.toLowerCase() || "";
+      const channel = clip.broadcasterName?.toLowerCase() || "";
+      return title.includes(query) || channel.includes(query);
     });
-  }, [clips]);
+  }, [clips, searchQuery]);
+
+  const groupedClips = useMemo(() => {
+    const groups = {};
+    filteredClips.forEach((clip) => {
+      const createdAtMs = getClipTimestampMs(clip.importedAt || clip.createdAt);
+      const dateKey = formatDateKey(createdAtMs);
+      if (!groups[dateKey]) {
+        groups[dateKey] = [];
+      }
+      groups[dateKey].push(clip);
+    });
+    return groups;
+  }, [filteredClips]);
+
+  const sortedDateKeys = useMemo(() => {
+    return Object.keys(groupedClips).sort((a, b) => {
+      const dateA = new Date(a);
+      const dateB = new Date(b);
+      return dateB - dateA;
+    });
+  }, [groupedClips]);
 
   useEffect(() => {
     const clipsWithoutThumbnail = clips.filter(
@@ -103,45 +131,61 @@ function ClipsPage() {
 
         {!loading && !error ? (
           clips.length ? (
-            <div className="clips-grid">
-              {sortedClips.map((clip) => {
-                const createdAtMs = getClipTimestampMs(clip.importedAt || clip.createdAt);
-                const isNew =
-                  createdAtMs &&
-                  Date.now() - createdAtMs < NEW_CLIP_WINDOW_MS;
-
-                return (
-                  <article className="clip-card" key={clip.id} onClick={() => setSelectedClip(clip)}>
-                    {isNew ? <div className="clip-card__new-badge">NEW</div> : null}
-                    <div className="clip-card__preview">
-                      {clip.thumbnailUrl || resolvedThumbnails[clip.id] ? (
-                        <img
-                          alt={clip.title}
-                          className="clip-card__thumbnail"
-                          src={clip.thumbnailUrl || resolvedThumbnails[clip.id]}
-                        />
-                      ) : clip.clipSlug ? (
-                        <div className="clip-card__placeholder">
-                          <span>Twitch Clip</span>
-                          <strong>{clip.title || extractTwitchClipSlug(clip.clipSlug)}</strong>
-                        </div>
-                      ) : (
-                        <div className="clip-card__placeholder">
-                          <span>Twitch Clip</span>
-                          <strong>{clip.title || "Ссылка не указана"}</strong>
-                        </div>
-                      )}
-                    </div>
-                    <div className="clip-card__body">
-                      {clip.broadcasterName ? (
-                        <div className="clip-card__channel">{clip.broadcasterName}</div>
-                      ) : null}
-                      <div className="clip-card__title">{clip.title}</div>
-                    </div>
-                  </article>
-                );
-              })}
+            <>
+              <div className="clips-search">
+                <input
+                  type="text"
+                  className="clips-search__input"
+                  placeholder="Поиск по названию или каналу..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
+              {sortedDateKeys.map((dateKey) => (
+                <section key={dateKey} className="clips-day-group">
+                  <h2 className="clips-day-group__title">{dateKey}</h2>
+                  <div className="clips-grid">
+                    {groupedClips[dateKey].map((clip) => {
+                      const createdAtMs = getClipTimestampMs(clip.importedAt || clip.createdAt);
+                      const isNew =
+                        createdAtMs &&
+                        Date.now() - createdAtMs < NEW_CLIP_WINDOW_MS;
+
+                      return (
+                        <article className="clip-card" key={clip.id} onClick={() => setSelectedClip(clip)}>
+                          {isNew ? <div className="clip-card__new-badge">NEW</div> : null}
+                          <div className="clip-card__preview">
+                            {clip.thumbnailUrl || resolvedThumbnails[clip.id] ? (
+                              <img
+                                alt={clip.title}
+                                className="clip-card__thumbnail"
+                                src={clip.thumbnailUrl || resolvedThumbnails[clip.id]}
+                              />
+                            ) : clip.clipSlug ? (
+                              <div className="clip-card__placeholder">
+                                <span>Twitch Clip</span>
+                                <strong>{clip.title || extractTwitchClipSlug(clip.clipSlug)}</strong>
+                              </div>
+                            ) : (
+                              <div className="clip-card__placeholder">
+                                <span>Twitch Clip</span>
+                                <strong>{clip.title || "Ссылка не указана"}</strong>
+                              </div>
+                            )}
+                          </div>
+                          <div className="clip-card__body">
+                            {clip.broadcasterName ? (
+                              <div className="clip-card__channel">{clip.broadcasterName}</div>
+                            ) : null}
+                            <div className="clip-card__title">{clip.title}</div>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                </section>
+              ))}
+            </>
           ) : (
             <div className="state-box">Пока нет клипов. Добавь их через `/admin`.</div>
           )
