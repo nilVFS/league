@@ -279,35 +279,38 @@ function HomePage() {
 
       {/* Список активных стримеров */}
       {displayedStreamers.length > 0 && (
-        <div className="active-streamers-list" aria-label="Активные стримеры">
-          {displayedStreamers.map((streamer) => (
-            <a
-              key={streamer.login}
-              href={streamer.href}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="active-streamers-list__item"
-              aria-label={`Смотреть ${streamer.displayName}`}
-            >
-              {streamer.imageUrl ? (
-                <img src={streamer.imageUrl} alt={streamer.displayName} />
-              ) : (
-                <div style={{ 
-                  width: '100%', 
-                  height: '100%', 
-                  background: 'rgba(224, 84, 84, 0.3)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '10px',
-                  color: '#fff'
-                }}>
-                  {streamer.displayName.charAt(0).toUpperCase()}
-                </div>
-              )}
-              <span className="active-streamers-list__tooltip">{streamer.displayName}</span>
-            </a>
-          ))}
+        <div className="active-streamers-wrapper" aria-label="Активные стримеры">
+          <div className="live-badge">LIVE</div>
+          <div className="active-streamers-list">
+            {displayedStreamers.map((streamer) => (
+              <a
+                key={streamer.login}
+                href={streamer.href}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="active-streamers-list__item"
+                aria-label={`Смотреть ${streamer.displayName}`}
+              >
+                {streamer.imageUrl ? (
+                  <img src={streamer.imageUrl} alt={streamer.displayName} />
+                ) : (
+                  <div style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    background: 'rgba(224, 84, 84, 0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '10px',
+                    color: '#fff'
+                  }}>
+                    {streamer.displayName.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <span className="active-streamers-list__tooltip">{streamer.displayName}</span>
+              </a>
+            ))}
+          </div>
         </div>
       )}
 
