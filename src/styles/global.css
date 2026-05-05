@@ -572,7 +572,7 @@ button {
   transform: translateY(-50%);
   opacity: 0;
   animation: fadeInHeroLinks 1.2s ease-out forwards;
-  animation-delay: 1.4s;
+  animation-delay: 3.2s;
 }
 
 .hero-links__item {
@@ -625,7 +625,7 @@ button {
   transform: translateY(-50%);
   opacity: 0;
   animation: fadeInUp 1.5s ease-out forwards;
-  animation-delay: 2s;
+  animation-delay: 3.2s;
 }
 
 .live-badge {

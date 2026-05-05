@@ -17,7 +17,7 @@ function HomePage() {
       href: "https://drive.google.com/file/d/1KHPyTOIIftW5uL5bjNK9GFAkVtio2IEq/view",
     },
     {
-      label: "Чат",
+      label: "Чат ТГ",
       href: "https://t.me/+J9-liq6gEh0xMWYy",
     },
   ];
