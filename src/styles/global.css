@@ -571,8 +571,8 @@ button {
   gap: 12px;
   transform: translateY(-50%);
   opacity: 0;
-  animation: fadeInHeroLinks 1.2s ease-out forwards;
-  animation-delay: 3.2s;
+  animation: fadeInUp 1.5s ease-out forwards;
+  animation-delay: 0.45s;
 }
 
 .hero-links__item {
@@ -602,17 +602,6 @@ button {
   box-shadow: 0 16px 36px rgba(7, 4, 2, 0.22);
 }
 
-@keyframes fadeInHeroLinks {
-  from {
-    opacity: 0;
-    transform: translateY(-46%) translateX(-12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0);
-  }
-}
-
 .active-streamers-wrapper {
   position: fixed;
   top: 50%;
@@ -625,7 +614,7 @@ button {
   transform: translateY(-50%);
   opacity: 0;
   animation: fadeInUp 1.5s ease-out forwards;
-  animation-delay: 3.2s;
+  animation-delay: 0.45s;
 }
 
 .live-badge {
