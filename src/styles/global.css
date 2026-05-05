@@ -909,7 +909,7 @@ button {
 
 .clip-card__channel {
   margin-bottom: 6px;
-  font-size: 13px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -919,7 +919,7 @@ button {
 .clip-card__title,
 .participant-card__name {
   margin-bottom: 7px;
-  font-size: 19px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--gold-bright);
 }
