@@ -9,7 +9,7 @@ function HomePage() {
   const joinHref = "https://clck.ru/3TQG34";
   const heroLinks = [
     {
-      label: "Таблица",
+      label: "Правила",
       href: "https://docs.google.com/spreadsheets/d/1hnTlFLwf_wfy3xviqUAXE9yQ6bFbsgnOqHQo6_WBpas/edit?gid=0#gid=0",
     },
     {
