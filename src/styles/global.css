@@ -570,6 +570,8 @@ button {
   flex-direction: column;
   gap: 12px;
   transform: translateY(-50%);
+  overflow: hidden;
+  max-height: 260px;
 }
 
 .active-streamers-list__item {
@@ -579,8 +581,9 @@ button {
   border-radius: 50%;
   border: 2px solid rgba(224, 84, 84, 0.6);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.5s ease;
   box-shadow: 0 0 12px rgba(224, 84, 84, 0.2);
+  flex-shrink: 0;
 }
 
 .active-streamers-list__item:hover {

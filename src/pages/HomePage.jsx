@@ -20,8 +20,10 @@ function HomePage() {
   const { items: participants } = useCollectionData(collectionNames.participants);
   const [liveStatuses, setLiveStatuses] = useState({});
   const [resolvedProfiles, setResolvedProfiles] = useState({});
+  const [displayedStreamers, setDisplayedStreamers] = useState([]);
+  const [scrollOffset, setScrollOffset] = useState(0);
 
-  // Получаем список онлайн-стримеров (максимум 5)
+  // Получаем список онлайн-стримеров
   const onlineStreamers = useMemo(() => {
     if (!participants.length) return [];
     
@@ -35,11 +37,46 @@ function HomePage() {
         
         return { login, isLive, imageUrl, displayName, href: participant.href };
       })
-      .filter((s) => s.isLive && s.login)
-      .slice(0, 5);
+      .filter((s) => s.isLive && s.login);
     
     return streamersWithStatus;
   }, [participants, resolvedProfiles, liveStatuses]);
+
+  // Логика прокрутки списка стримеров
+  useEffect(() => {
+    if (onlineStreamers.length <= 5) {
+      setDisplayedStreamers(onlineStreamers.slice(0, 5));
+      setScrollOffset(0);
+      return;
+    }
+
+    // Показываем первые 5 стримеров
+    const initialStreamers = onlineStreamers.slice(0, 5);
+    setDisplayedStreamers(initialStreamers);
+
+    const intervalId = setInterval(() => {
+      setScrollOffset((prev) => {
+        const newOffset = prev + 1;
+        if (newOffset >= onlineStreamers.length) {
+          return 0;
+        }
+        return newOffset;
+      });
+    }, 7000);
+
+    return () => clearInterval(intervalId);
+  }, [onlineStreamers]);
+
+  useEffect(() => {
+    if (onlineStreamers.length > 5) {
+      const visible = [];
+      for (let i = 0; i < 5; i++) {
+        const index = (scrollOffset + i) % onlineStreamers.length;
+        visible.push(onlineStreamers[index]);
+      }
+      setDisplayedStreamers(visible);
+    }
+  }, [scrollOffset, onlineStreamers]);
 
   useEffect(() => {
     if (!participants.length) {
@@ -241,9 +278,9 @@ function HomePage() {
       </div>
 
       {/* Список активных стримеров */}
-      {onlineStreamers.length > 0 && (
+      {displayedStreamers.length > 0 && (
         <div className="active-streamers-list" aria-label="Активные стримеры">
-          {onlineStreamers.map((streamer) => (
+          {displayedStreamers.map((streamer) => (
             <a
               key={streamer.login}
               href={streamer.href}
