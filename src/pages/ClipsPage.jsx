@@ -11,20 +11,34 @@ import {
 
 const NEW_CLIP_WINDOW_MS = 24 * 60 * 60 * 1000;
 
+function getClipTimestampMs(value) {
+  if (!value) {
+    return 0;
+  }
+
+  if (typeof value?.toMillis === "function") {
+    return value.toMillis();
+  }
+
+  if (typeof value?.seconds === "number") {
+    return value.seconds * 1000;
+  }
+
+  const parsed = new Date(value).getTime();
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
 function ClipsPage() {
   const { items: clips, loading, error } = useCollectionData(collectionNames.clips);
   const [selectedClip, setSelectedClip] = useState(null);
   const [resolvedThumbnails, setResolvedThumbnails] = useState({});
   const sortedClips = useMemo(() => {
     return [...clips].sort((left, right) => {
-      const leftCreatedAt = left.importedAt || left.createdAt || "";
-      const rightCreatedAt = right.importedAt || right.createdAt || "";
-      const leftIsNew =
-        leftCreatedAt &&
-        Date.now() - new Date(leftCreatedAt).getTime() < NEW_CLIP_WINDOW_MS;
-      const rightIsNew =
-        rightCreatedAt &&
-        Date.now() - new Date(rightCreatedAt).getTime() < NEW_CLIP_WINDOW_MS;
+      const leftCreatedAtMs = getClipTimestampMs(left.importedAt || left.createdAt);
+      const rightCreatedAtMs = getClipTimestampMs(right.importedAt || right.createdAt);
+      const now = Date.now();
+      const leftIsNew = leftCreatedAtMs && now - leftCreatedAtMs < NEW_CLIP_WINDOW_MS;
+      const rightIsNew = rightCreatedAtMs && now - rightCreatedAtMs < NEW_CLIP_WINDOW_MS;
 
       if (leftIsNew !== rightIsNew) {
         return Number(rightIsNew) - Number(leftIsNew);
@@ -91,10 +105,10 @@ function ClipsPage() {
           clips.length ? (
             <div className="clips-grid">
               {sortedClips.map((clip) => {
-                const createdAt = clip.importedAt || clip.createdAt || "";
+                const createdAtMs = getClipTimestampMs(clip.importedAt || clip.createdAt);
                 const isNew =
-                  createdAt &&
-                  Date.now() - new Date(createdAt).getTime() < NEW_CLIP_WINDOW_MS;
+                  createdAtMs &&
+                  Date.now() - createdAtMs < NEW_CLIP_WINDOW_MS;
 
                 return (
                   <article className="clip-card" key={clip.id} onClick={() => setSelectedClip(clip)}>
