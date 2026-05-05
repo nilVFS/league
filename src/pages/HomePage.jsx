@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { homeHeroLines } from "../data/siteData";
 import useSectionSnap from "../hooks/useSectionSnap";
+import { extractTwitchChannelLogin, fetchTwitchChannelProfile, fetchTwitchLiveStatuses } from "../lib/twitch";
+import useCollectionData from "../hooks/useCollectionData";
+import { collectionNames } from "../lib/content";
 
 function HomePage() {
   const joinHref = "https://clck.ru/3TQG34";
@@ -12,6 +15,130 @@ function HomePage() {
   const [visibleSections, setVisibleSections] = useState(() =>
     activeHomeSections.map(() => false)
   );
+  
+  // Загрузка данных участников для отображения онлайн-стримеров
+  const { items: participants } = useCollectionData(collectionNames.participants);
+  const [liveStatuses, setLiveStatuses] = useState({});
+  const [resolvedProfiles, setResolvedProfiles] = useState({});
+
+  // Получаем список онлайн-стримеров (максимум 5)
+  const onlineStreamers = useMemo(() => {
+    if (!participants.length) return [];
+    
+    const streamersWithStatus = participants
+      .map((participant) => {
+        const profile = resolvedProfiles[participant.id];
+        const login = profile?.login || extractTwitchChannelLogin(participant.href);
+        const isLive = Boolean(login && liveStatuses[login]);
+        const imageUrl = participant.imageUrl || profile?.profileImageUrl;
+        const displayName = participant.name || profile?.displayName || login || "Стример";
+        
+        return { login, isLive, imageUrl, displayName, href: participant.href };
+      })
+      .filter((s) => s.isLive && s.login)
+      .slice(0, 5);
+    
+    return streamersWithStatus;
+  }, [participants, resolvedProfiles, liveStatuses]);
+
+  useEffect(() => {
+    if (!participants.length) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadAllData = async () => {
+      const unresolvedParticipants = participants.filter(
+        (participant) =>
+          participant.href &&
+          (!participant.name || !participant.channel || !participant.imageUrl) &&
+          !Object.prototype.hasOwnProperty.call(resolvedProfiles, participant.id)
+      );
+
+      const participantLinks = participants
+        .map((participant) => participant.href)
+        .filter((href) => extractTwitchChannelLogin(href));
+
+      const profilesPromise = unresolvedParticipants.length
+        ? Promise.all(
+            unresolvedParticipants.map(async (participant) => {
+              try {
+                const profile = await fetchTwitchChannelProfile(participant.href);
+                return [participant.id, profile];
+              } catch {
+                return [participant.id, null];
+              }
+            })
+          )
+        : Promise.resolve([]);
+
+      const liveStatusesPromise = participantLinks.length
+        ? fetchTwitchLiveStatuses(participantLinks)
+        : Promise.resolve({});
+
+      try {
+        const [profileEntries, nextStatuses] = await Promise.all([
+          profilesPromise,
+          liveStatusesPromise,
+        ]);
+
+        if (cancelled) {
+          return;
+        }
+
+        if (profileEntries.length) {
+          setResolvedProfiles((current) => {
+            const next = { ...current };
+            profileEntries.forEach(([participantId, profile]) => {
+              next[participantId] = profile;
+            });
+            return next;
+          });
+        }
+
+        setLiveStatuses(nextStatuses);
+      } catch {
+        if (!cancelled) {
+          setLiveStatuses({});
+        }
+      }
+    };
+
+    loadAllData();
+
+    let intervalId = null;
+    const fiveMinuteTimerId = window.setTimeout(() => {
+      const refreshLiveStatuses = async () => {
+        const participantLinksForRefresh = participants
+          .map((participant) => participant.href)
+          .filter((href) => extractTwitchChannelLogin(href));
+
+        if (!participantLinksForRefresh.length) {
+          return;
+        }
+
+        try {
+          const nextStatuses = await fetchTwitchLiveStatuses(participantLinksForRefresh);
+          if (!cancelled) {
+            setLiveStatuses(nextStatuses);
+          }
+        } catch {
+          // Игнорируем ошибки при обновлении
+        }
+      };
+
+      refreshLiveStatuses();
+      intervalId = window.setInterval(refreshLiveStatuses, 10 * 60 * 1000);
+    }, 5 * 60 * 1000);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(fiveMinuteTimerId);
+      window.clearInterval(intervalId);
+    };
+  }, [participants]);
+
   const particleSpecs = useMemo(
     () =>
       Array.from({ length: 8 }, (_, index) => ({
@@ -112,6 +239,40 @@ function HomePage() {
           />
         ))}
       </div>
+
+      {/* Список активных стримеров */}
+      {onlineStreamers.length > 0 && (
+        <div className="active-streamers-list" aria-label="Активные стримеры">
+          {onlineStreamers.map((streamer) => (
+            <a
+              key={streamer.login}
+              href={streamer.href}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="active-streamers-list__item"
+              aria-label={`Смотреть ${streamer.displayName}`}
+            >
+              {streamer.imageUrl ? (
+                <img src={streamer.imageUrl} alt={streamer.displayName} />
+              ) : (
+                <div style={{ 
+                  width: '100%', 
+                  height: '100%', 
+                  background: 'rgba(224, 84, 84, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '10px',
+                  color: '#fff'
+                }}>
+                  {streamer.displayName.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <span className="active-streamers-list__tooltip">{streamer.displayName}</span>
+            </a>
+          ))}
+        </div>
+      )}
 
       <div className="home-scroll">
         <section
