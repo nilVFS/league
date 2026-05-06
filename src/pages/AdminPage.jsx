@@ -88,6 +88,8 @@ function AdminPage() {
   const [editingAwardId, setEditingAwardId] = useState("");
   const [editingLadderPlayerId, setEditingLadderPlayerId] = useState("");
   const [editingAchievementClaimId, setEditingAchievementClaimId] = useState("");
+  const [ladderSearch, setLadderSearch] = useState("");
+  const [selectedLadderPlayerTag, setSelectedLadderPlayerTag] = useState("");
   const [status, setStatus] = useState("");
   const [submitting, setSubmitting] = useState("");
 
@@ -137,6 +139,80 @@ function AdminPage() {
       }))
       .sort((left, right) => left.playerTag.localeCompare(right.playerTag, "ru"));
   }, [achievementClaimsState.items]);
+
+  const ladderPlayerDirectory = useMemo(() => {
+    const groups = new Map();
+
+    ladderPlayersState.items.forEach((player) => {
+      const playerTag = player.playerTag || player.tag || "Без ника";
+      const key = normalizePlayerTag(playerTag) || playerTag;
+
+      if (!groups.has(key)) {
+        groups.set(key, {
+          key,
+          playerTag,
+          playerId: player.id,
+          claims: [],
+        });
+      } else if (!groups.get(key).playerId) {
+        groups.get(key).playerId = player.id;
+      }
+    });
+
+    groupedAchievementClaims.forEach((group) => {
+      const key = normalizePlayerTag(group.playerTag) || group.playerTag;
+      if (!groups.has(key)) {
+        groups.set(key, {
+          key,
+          playerTag: group.playerTag,
+          playerId: "",
+          claims: group.items,
+        });
+      } else {
+        groups.get(key).claims = group.items;
+      }
+    });
+
+    return Array.from(groups.values()).sort((left, right) =>
+      left.playerTag.localeCompare(right.playerTag, "ru")
+    );
+  }, [groupedAchievementClaims, ladderPlayersState.items]);
+
+  const filteredLadderPlayers = useMemo(() => {
+    const query = normalizePlayerTag(ladderSearch);
+    if (!query) {
+      return ladderPlayerDirectory;
+    }
+
+    return ladderPlayerDirectory.filter((player) =>
+      normalizePlayerTag(player.playerTag).includes(query)
+    );
+  }, [ladderPlayerDirectory, ladderSearch]);
+
+  const selectedLadderPlayer = useMemo(() => {
+    if (!filteredLadderPlayers.length) {
+      return null;
+    }
+
+    const selected =
+      filteredLadderPlayers.find((player) => player.key === selectedLadderPlayerTag) || null;
+
+    return selected || filteredLadderPlayers[0];
+  }, [filteredLadderPlayers, selectedLadderPlayerTag]);
+
+  useEffect(() => {
+    if (!filteredLadderPlayers.length) {
+      if (selectedLadderPlayerTag) {
+        setSelectedLadderPlayerTag("");
+      }
+      return;
+    }
+
+    const exists = filteredLadderPlayers.some((player) => player.key === selectedLadderPlayerTag);
+    if (!exists) {
+      setSelectedLadderPlayerTag(filteredLadderPlayers[0].key);
+    }
+  }, [filteredLadderPlayers, selectedLadderPlayerTag]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1268,8 +1344,8 @@ function AdminPage() {
             ) : null}
 
             {activeTab === "ladder" ? (
-              <div className="admin-pane admin-pane--split">
-                <div className="admin-pane__column">
+              <div className="admin-pane">
+                <div className="admin-sections admin-sections--ladder">
                   <section className="admin-card">
                     <h2>
                       {editingLadderPlayerId
@@ -1420,67 +1496,119 @@ function AdminPage() {
                   </section>
                 </div>
 
-                <div className="admin-pane__column">
+                <div className="admin-pane admin-pane--directory">
                   <section className="admin-card">
-                    <h2>Игроки ладдера</h2>
-                    {ladderPlayersState.items.length ? (
-                      <div className="admin-card__content admin-card__content--scroll">
-                        <div className="admin-list">
-                          {ladderPlayersState.items.map((player) => (
-                            <div className="admin-list__item" key={player.id}>
-                              <div>
-                                <strong>{player.playerTag || player.tag}</strong>
-                              </div>
-                              <div className="admin-list__actions">
-                                <button
-                                  className="admin-button admin-button--ghost"
-                                  onClick={() => {
-                                    setEditingLadderPlayerId(player.id);
-                                    setLadderPlayerForm({
-                                      playerTag: player.playerTag || player.tag || "",
-                                    });
-                                  }}
-                                  type="button"
-                                >
-                                  Редактировать
-                                </button>
-                                <button
-                                  className="admin-button admin-button--ghost"
-                                  disabled={submitting === `delete-${player.id}`}
-                                  onClick={() =>
-                                    handleDelete(collectionNames.ladderPlayers, player.id, "Игрок")
-                                  }
-                                  type="button"
-                                >
-                                  Удалить
-                                </button>
-                              </div>
-                            </div>
-                          ))}
+                    <div className="admin-directory__header">
+                      <div>
+                        <h2>Игроки ладдера</h2>
+                        <div className="admin-list__meta">
+                          Выбирай игрока слева и смотри его достижения справа.
                         </div>
                       </div>
-                    ) : (
-                      <div className="state-box">
-                        Пока нет игроков в белом списке. Неизвестные ники из чата будут
-                        уходить на модерацию.
-                      </div>
-                    )}
-                  </section>
 
-                  <section className="admin-card">
-                    <h2>Список выполнений</h2>
-                    {achievementClaimsState.items.length ? (
-                      <div className="admin-card__content admin-card__content--scroll">
-                        <div className="admin-groups">
-                          {groupedAchievementClaims.map((group) => (
-                            <section className="admin-group" key={group.playerTag}>
-                              <div className="admin-group__header">
-                                <strong>{group.playerTag}</strong>
-                                <span className="admin-tab__badge">{group.items.length}</span>
+                      <label className="admin-field admin-directory__search">
+                        <span>Поиск по нику</span>
+                        <input
+                          onChange={(event) => setLadderSearch(event.target.value)}
+                          placeholder="nick#1234"
+                          type="search"
+                          value={ladderSearch}
+                        />
+                      </label>
+                    </div>
+
+                    <div className="admin-directory">
+                      <div className="admin-directory__sidebar">
+                        {filteredLadderPlayers.length ? (
+                          <div className="admin-card__content admin-card__content--scroll">
+                            <div className="admin-directory__list">
+                              {filteredLadderPlayers.map((player) => (
+                                <button
+                                  key={player.key}
+                                  className={`admin-directory__item ${
+                                    selectedLadderPlayer?.key === player.key
+                                      ? "admin-directory__item--active"
+                                      : ""
+                                  }`}
+                                  onClick={() => setSelectedLadderPlayerTag(player.key)}
+                                  type="button"
+                                >
+                                  <div className="admin-directory__item-main">
+                                    <strong>{player.playerTag}</strong>
+                                    <div className="admin-list__meta">
+                                      {player.claims.length
+                                        ? `${player.claims.length} выполнений`
+                                        : "Пока без выполнений"}
+                                    </div>
+                                  </div>
+                                  <span className="admin-tab__badge">
+                                    {player.claims.length}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="state-box">
+                            {ladderPlayerDirectory.length
+                              ? "По этому запросу игроки не найдены."
+                              : "Пока нет игроков в белом списке. Неизвестные ники из чата будут уходить на модерацию."}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="admin-directory__detail">
+                        {selectedLadderPlayer ? (
+                          <section className="admin-group">
+                            <div className="admin-group__header">
+                              <div>
+                                <strong>{selectedLadderPlayer.playerTag}</strong>
+                                <div className="admin-list__meta">
+                                  {selectedLadderPlayer.claims.length
+                                    ? `${selectedLadderPlayer.claims.length} достижений`
+                                    : "Пока нет выполнений"}
+                                </div>
                               </div>
 
+                              <div className="admin-list__actions">
+                                {selectedLadderPlayer.playerId ? (
+                                  <>
+                                    <button
+                                      className="admin-button admin-button--ghost"
+                                      onClick={() => {
+                                        setEditingLadderPlayerId(selectedLadderPlayer.playerId);
+                                        setLadderPlayerForm({
+                                          playerTag: selectedLadderPlayer.playerTag,
+                                        });
+                                      }}
+                                      type="button"
+                                    >
+                                      Редактировать ник
+                                    </button>
+                                    <button
+                                      className="admin-button admin-button--ghost"
+                                      disabled={
+                                        submitting === `delete-${selectedLadderPlayer.playerId}`
+                                      }
+                                      onClick={() =>
+                                        handleDelete(
+                                          collectionNames.ladderPlayers,
+                                          selectedLadderPlayer.playerId,
+                                          "Игрок"
+                                        )
+                                      }
+                                      type="button"
+                                    >
+                                      Удалить из списка
+                                    </button>
+                                  </>
+                                ) : null}
+                              </div>
+                            </div>
+
+                            {selectedLadderPlayer.claims.length ? (
                               <div className="admin-list admin-list--compact">
-                                {group.items.map((claim) => (
+                                {selectedLadderPlayer.claims.map((claim) => (
                                   <div className="admin-list__item" key={claim.id}>
                                     <div>
                                       <strong>
@@ -1524,7 +1652,6 @@ function AdminPage() {
                                             proofUrl: claim.proofUrl || "",
                                             status: claim.status || "accepted",
                                           });
-                                          setActiveTab("ladder");
                                         }}
                                         type="button"
                                       >
@@ -1548,13 +1675,19 @@ function AdminPage() {
                                   </div>
                                 ))}
                               </div>
-                            </section>
-                          ))}
-                        </div>
+                            ) : (
+                              <div className="state-box">
+                                У этого игрока пока нет выполнений в ладдере.
+                              </div>
+                            )}
+                          </section>
+                        ) : (
+                          <div className="state-box">
+                            Выбери игрока слева, чтобы посмотреть его достижения.
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="state-box">Пока нет выполнений в ладдере.</div>
-                    )}
+                    </div>
                   </section>
                 </div>
               </div>

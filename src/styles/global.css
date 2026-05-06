@@ -1268,6 +1268,10 @@ button {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
+.admin-sections--ladder {
+  grid-template-columns: repeat(2, minmax(320px, 1fr));
+}
+
 .admin-card {
   padding: 24px;
   border: 1px solid var(--line-warm);
@@ -1381,6 +1385,64 @@ button {
 .admin-groups {
   display: grid;
   gap: 18px;
+}
+
+.admin-directory__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.admin-directory__search {
+  width: min(320px, 100%);
+}
+
+.admin-directory {
+  display: grid;
+  grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.admin-directory__sidebar,
+.admin-directory__detail {
+  min-height: 0;
+}
+
+.admin-directory__list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-directory__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(200, 166, 108, 0.12);
+  border-radius: 16px;
+  background: rgba(17, 11, 6, 0.44);
+  color: var(--text-main);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.admin-directory__item:hover {
+  transform: translateY(-1px);
+  border-color: rgba(200, 166, 108, 0.3);
+}
+
+.admin-directory__item--active {
+  border-color: rgba(200, 166, 108, 0.34);
+  background: rgba(74, 52, 28, 0.46);
+}
+
+.admin-directory__item-main {
+  min-width: 0;
 }
 
 .admin-group {
@@ -1890,6 +1952,10 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .admin-sections--ladder {
+    grid-template-columns: 1fr;
+  }
+
   .admin-pane--split {
     grid-template-columns: 1fr;
   }
@@ -1898,6 +1964,17 @@ button {
     position: static;
     max-height: none;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+
+  .admin-directory__header,
+  .admin-directory {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-directory__search {
+    width: 100%;
   }
 
   .admin-list__item {
