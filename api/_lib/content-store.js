@@ -10,6 +10,7 @@ export const collectionNames = {
   participants: "participants",
   awards: "awards",
   suggestions: "suggestions",
+  achievementClaims: "achievementClaims",
 };
 
 const allowedCollections = new Set(Object.values(collectionNames));
@@ -20,6 +21,7 @@ const defaultStore = {
   participants: [],
   awards: [],
   suggestions: [],
+  achievementClaims: [],
 };
 
 let driverPromise = null;

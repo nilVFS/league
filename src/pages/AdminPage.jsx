@@ -36,6 +36,7 @@ const participantInitialState = {
 };
 
 const awardInitialState = {
+  code: "",
   category: "",
   title: "",
   score: "",
@@ -334,6 +335,7 @@ function AdminPage() {
 
     try {
       const payload = {
+        code: Number(awardForm.code),
         category: awardForm.category.trim() || "Общие",
         title: awardForm.title.trim(),
         score: Number(awardForm.score),
@@ -850,6 +852,18 @@ function AdminPage() {
                   <h2>{editingAwardId ? "Редактировать награду" : "Добавить награду"}</h2>
                   <form className="admin-form" onSubmit={handleAwardSubmit}>
                     <label className="admin-field">
+                      <span>Номер достижения</span>
+                      <input
+                        min="1"
+                        onChange={(event) =>
+                          setAwardForm((current) => ({ ...current, code: event.target.value }))
+                        }
+                        required
+                        type="number"
+                        value={awardForm.code}
+                      />
+                    </label>
+                    <label className="admin-field">
                       <span>Раздел</span>
                       <input
                         onChange={(event) =>
@@ -929,7 +943,7 @@ function AdminPage() {
                         <div>
                           <strong>{award.title}</strong>
                           <div className="admin-list__meta">
-                            {(award.category || "Общие")} • {award.score} баллов
+                            #{award.code ?? "—"} • {(award.category || "Общие")} • {award.score} баллов
                           </div>
                           {award.description ? (
                             <div className="admin-list__meta">{award.description}</div>
@@ -941,6 +955,7 @@ function AdminPage() {
                             onClick={() => {
                               setEditingAwardId(award.id);
                               setAwardForm({
+                                code: String(award.code ?? ""),
                                 category: award.category || "",
                                 title: award.title || "",
                                 score: String(award.score ?? ""),

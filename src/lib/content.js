@@ -3,6 +3,7 @@ export const collectionNames = {
   participants: "participants",
   awards: "awards",
   suggestions: "suggestions",
+  achievementClaims: "achievementClaims",
 };
 
 const POLL_INTERVAL_MS = 15000;

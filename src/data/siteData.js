@@ -2,6 +2,7 @@ export const navItems = [
   { label: "Главная", to: "/" },
   { label: "Клипы", to: "/clips" },
   { label: "Участники", to: "/participants" },
+  { label: "Ладдер", to: "/ladder" },
   { label: "Награды", to: "/awards" },
 ];
 

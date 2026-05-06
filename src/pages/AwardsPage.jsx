@@ -49,6 +49,7 @@ function AwardsPage() {
                       </colgroup>
                       <thead>
                         <tr>
+                          <th>№</th>
                           <th>Награда</th>
                           <th>Баллы</th>
                           <th>Бонус</th>
@@ -57,6 +58,7 @@ function AwardsPage() {
                       <tbody>
                         {items.map((item) => (
                           <tr key={item.id}>
+                            <td data-label="№">{item.code ?? "—"}</td>
                             <td data-label="Награда">{item.title}</td>
                             <td className="tasks-table__score" data-label="Баллы">
                               {item.score}
