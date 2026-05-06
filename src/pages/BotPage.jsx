@@ -44,6 +44,10 @@ function BotPage() {
     [status, channel, bot]
   );
 
+  const handleBotAuth = () => {
+    window.location.assign("/api/twitch/auth/start?kind=bot");
+  };
+
   const handleBroadcasterAuth = (event) => {
     event.preventDefault();
     const normalizedLogin = broadcasterLogin.trim().replace(/^@/, "").toLowerCase();
@@ -103,6 +107,19 @@ function BotPage() {
                 </button>
               </div>
             </form>
+          </section>
+
+          <section className="admin-card">
+            <h2>Служебно: бот-аккаунт</h2>
+            <p className="page-card__description">
+              Этот блок нужен редко: когда мы меняем scope бота или хотим заново
+              выдать ему доступ на чтение и отправку сообщений в чат.
+            </p>
+            <div className="admin-actions">
+              <button className="admin-button admin-button--ghost" onClick={handleBotAuth} type="button">
+                Переавторизовать бота
+              </button>
+            </div>
           </section>
         </div>
       </PageIntroCard>
