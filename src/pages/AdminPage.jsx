@@ -723,36 +723,45 @@ function AdminPage() {
   }
 
   return (
-    <main className="inner-page">
-      <PageIntroCard
-        description="Слева переключай разделы, по центру добавляй или редактируй контент, а ниже смотри текущий список записей или запросов от пользователей."
-        eyebrow="Admin"
-        title="Панель управления"
-      >
-        <div className="admin-toolbar">
-          <div className="admin-toolbar__user">
-            Вошли как <strong>{user.email}</strong>
+    <main className="admin-screen">
+      <section className="admin-shell-panel">
+        <header className="admin-header">
+          <div className="admin-header__main">
+            <span className="page-card__eyebrow">Admin</span>
+            <div className="admin-header__copy">
+              <h1 className="admin-header__title">Панель управления</h1>
+              <p className="admin-header__description">
+                Разделы собраны в одном рабочем пространстве: слева навигация,
+                справа формы, списки и модерация без бесконечной прокрутки.
+              </p>
+            </div>
           </div>
 
-          <div className="admin-toolbar__actions">
-            <button
-              className="admin-button"
-              disabled={submitting === "seed"}
-              onClick={handleSeed}
-              type="button"
-            >
-              {submitting === "seed" ? "Заполняем..." : "Заполнить тестовыми данными"}
-            </button>
-            <button
-              className="admin-button admin-button--ghost"
-              disabled={submitting === "logout"}
-              onClick={handleLogout}
-              type="button"
-            >
-              Выйти
-            </button>
+          <div className="admin-toolbar">
+            <div className="admin-toolbar__user">
+              Вошли как <strong>{user.email}</strong>
+            </div>
+
+            <div className="admin-toolbar__actions">
+              <button
+                className="admin-button"
+                disabled={submitting === "seed"}
+                onClick={handleSeed}
+                type="button"
+              >
+                {submitting === "seed" ? "Заполняем..." : "Заполнить тестовыми данными"}
+              </button>
+              <button
+                className="admin-button admin-button--ghost"
+                disabled={submitting === "logout"}
+                onClick={handleLogout}
+                type="button"
+              >
+                Выйти
+              </button>
+            </div>
           </div>
-        </div>
+        </header>
 
         {status ? <div className="state-box">{status}</div> : null}
 
@@ -1509,87 +1518,87 @@ function AdminPage() {
                       <div className="admin-list">
                         {pendingSuggestions.map((suggestion) => (
                           <div className="admin-list__item" key={suggestion.id}>
-                          <div>
-                            <strong>
-                              {suggestion.type === "clip"
-                                ? "Клип"
-                                : suggestion.type === "participant"
-                                  ? "Участник"
-                                  : "Заявка в ладдер"}
-                              : {suggestion.title || suggestion.name || suggestion.playerTag}
-                            </strong>
-                            {suggestion.clipSlug ? (
+                            <div>
+                              <strong>
+                                {suggestion.type === "clip"
+                                  ? "Клип"
+                                  : suggestion.type === "participant"
+                                    ? "Участник"
+                                    : "Заявка в ладдер"}
+                                : {suggestion.title || suggestion.name || suggestion.playerTag}
+                              </strong>
+                              {suggestion.clipSlug ? (
+                                <div className="admin-list__meta">
+                                  <a
+                                    href={`https://clips.twitch.tv/${suggestion.clipSlug}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    https://clips.twitch.tv/{suggestion.clipSlug}
+                                  </a>
+                                </div>
+                              ) : null}
+                              {suggestion.href ? (
+                                <div className="admin-list__meta">
+                                  <a
+                                    href={suggestion.href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    {suggestion.href}
+                                  </a>
+                                </div>
+                              ) : null}
+                              {suggestion.proofUrl ? (
+                                <div className="admin-list__meta">
+                                  <a
+                                    href={suggestion.proofUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    {suggestion.proofUrl}
+                                  </a>
+                                </div>
+                              ) : null}
                               <div className="admin-list__meta">
-                                <a
-                                  href={`https://clips.twitch.tv/${suggestion.clipSlug}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  https://clips.twitch.tv/{suggestion.clipSlug}
-                                </a>
+                                {suggestion.type === "ladderClaim"
+                                  ? `Достижение #${suggestion.achievementCode}`
+                                  : suggestion.preview ||
+                                    suggestion.channel ||
+                                    suggestion.description}
                               </div>
-                            ) : null}
-                            {suggestion.href ? (
-                              <div className="admin-list__meta">
-                                <a
-                                  href={suggestion.href}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  {suggestion.href}
-                                </a>
-                              </div>
-                            ) : null}
-                            {suggestion.proofUrl ? (
-                              <div className="admin-list__meta">
-                                <a
-                                  href={suggestion.proofUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  {suggestion.proofUrl}
-                                </a>
-                              </div>
-                            ) : null}
-                            <div className="admin-list__meta">
-                              {suggestion.type === "ladderClaim"
-                                ? `Достижение #${suggestion.achievementCode}`
-                                : suggestion.preview ||
-                                  suggestion.channel ||
-                                  suggestion.description}
+                              {suggestion.contact ? (
+                                <div className="admin-list__meta">
+                                  Контакт: {suggestion.contact}
+                                </div>
+                              ) : null}
+                              {suggestion.chatterLogin ? (
+                                <div className="admin-list__meta">
+                                  Отправил: {suggestion.chatterLogin}
+                                  {suggestion.broadcasterLogin
+                                    ? ` • канал ${suggestion.broadcasterLogin}`
+                                    : ""}
+                                </div>
+                              ) : null}
                             </div>
-                            {suggestion.contact ? (
-                              <div className="admin-list__meta">
-                                Контакт: {suggestion.contact}
-                              </div>
-                            ) : null}
-                            {suggestion.chatterLogin ? (
-                              <div className="admin-list__meta">
-                                Отправил: {suggestion.chatterLogin}
-                                {suggestion.broadcasterLogin
-                                  ? ` • канал ${suggestion.broadcasterLogin}`
-                                  : ""}
-                              </div>
-                            ) : null}
-                          </div>
-                          <div className="admin-list__actions">
-                            <button
-                              className="admin-button"
-                              disabled={submitting === `approve-${suggestion.id}`}
-                              onClick={() => handleApproveSuggestion(suggestion)}
-                              type="button"
-                            >
-                              Принять
-                            </button>
-                            <button
-                              className="admin-button admin-button--ghost"
-                              disabled={submitting === `reject-${suggestion.id}`}
-                              onClick={() => handleRejectSuggestion(suggestion.id)}
-                              type="button"
-                            >
-                              Отклонить
-                            </button>
-                          </div>
+                            <div className="admin-list__actions">
+                              <button
+                                className="admin-button"
+                                disabled={submitting === `approve-${suggestion.id}`}
+                                onClick={() => handleApproveSuggestion(suggestion)}
+                                type="button"
+                              >
+                                Принять
+                              </button>
+                              <button
+                                className="admin-button admin-button--ghost"
+                                disabled={submitting === `reject-${suggestion.id}`}
+                                onClick={() => handleRejectSuggestion(suggestion.id)}
+                                type="button"
+                              >
+                                Отклонить
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -1602,7 +1611,7 @@ function AdminPage() {
             ) : null}
           </section>
         </div>
-      </PageIntroCard>
+      </section>
     </main>
   );
 }
