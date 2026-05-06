@@ -66,6 +66,20 @@ function compareByCreatedAtDesc(left, right) {
   return rightTime - leftTime;
 }
 
+function getDocumentIdCandidates(id) {
+  const value = String(id || "").trim();
+
+  if (!value) {
+    return [];
+  }
+
+  const candidates = new Set([value]);
+  candidates.add(value.replace(/__(\d+)$/, "_$1"));
+  candidates.add(value.replace(/_(\d+)$/, "__$1"));
+
+  return Array.from(candidates);
+}
+
 async function ensureStoreFile() {
   const storePath = getStorePath();
   await mkdir(path.dirname(storePath), { recursive: true });
@@ -213,7 +227,15 @@ async function listCollectionFromYdb(name) {
 
 async function getDocumentFromYdb(name, id) {
   const items = await listCollectionFromYdb(name);
-  return items.find((item) => item.id === id || item._storageId === id) || null;
+  const candidates = getDocumentIdCandidates(id);
+
+  return (
+    items.find(
+      (item) =>
+        candidates.includes(String(item.id || "")) ||
+        candidates.includes(String(item._storageId || ""))
+    ) || null
+  );
 }
 
 async function upsertDocumentToYdb(name, document) {
@@ -275,8 +297,11 @@ async function createDocumentInFile(name, payload) {
 async function updateDocumentInFile(name, id, payload) {
   const store = await readStore();
   const items = store[name] || [];
+  const candidates = getDocumentIdCandidates(id);
   const index = items.findIndex(
-    (item) => item.id === id || item._storageId === id
+    (item) =>
+      candidates.includes(String(item.id || "")) ||
+      candidates.includes(String(item._storageId || ""))
   );
 
   if (index < 0) {
@@ -305,8 +330,11 @@ async function updateDocumentInFile(name, id, payload) {
 async function deleteDocumentFromFile(name, id) {
   const store = await readStore();
   const items = store[name] || [];
+  const candidates = getDocumentIdCandidates(id);
   const nextItems = items.filter(
-    (item) => item.id !== id && item._storageId !== id
+    (item) =>
+      !candidates.includes(String(item.id || "")) &&
+      !candidates.includes(String(item._storageId || ""))
   );
 
   if (nextItems.length === items.length) {
