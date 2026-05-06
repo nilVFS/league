@@ -47,7 +47,7 @@ export default async function handler(request, response) {
       state,
       scopes:
         kind === "bot"
-          ? ["user:read:chat", "user:bot"]
+          ? ["user:read:chat", "user:write:chat", "user:bot"]
           : ["channel:bot"],
     });
 

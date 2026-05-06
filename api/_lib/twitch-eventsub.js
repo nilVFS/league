@@ -233,3 +233,35 @@ export async function createOrReuseChatMessageSubscription({
     reused: false,
   };
 }
+
+export async function sendTwitchChatMessage({
+  broadcasterUserId,
+  message,
+  replyParentMessageId = "",
+}) {
+  const { botUserId } = getTwitchConfig();
+  const accessToken = await getTwitchAppAccessToken();
+  const payload = await twitchApiRequest("/chat/messages", accessToken, {
+    method: "POST",
+    body: JSON.stringify({
+      broadcaster_id: String(broadcasterUserId),
+      sender_id: String(botUserId),
+      message: String(message || ""),
+      ...(replyParentMessageId
+        ? { reply_parent_message_id: String(replyParentMessageId) }
+        : {}),
+    }),
+  });
+  const messageResult = payload?.data?.[0] || null;
+
+  if (!messageResult?.is_sent) {
+    const error = new Error(
+      messageResult?.drop_reason?.message || "Twitch не отправил сообщение в чат."
+    );
+    error.statusCode = 502;
+    error.details = messageResult?.drop_reason || payload || null;
+    throw error;
+  }
+
+  return messageResult;
+}

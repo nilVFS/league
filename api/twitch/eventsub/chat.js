@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { collectionNames, listCollection } from "../../_lib/content-store.js";
 import { parseAchievementCommand, saveAchievementClaim } from "../../_lib/ladder.js";
+import { sendTwitchChatMessage } from "../../_lib/twitch-eventsub.js";
 
 const MESSAGE_ID_HEADER = "twitch-eventsub-message-id";
 const MESSAGE_TIMESTAMP_HEADER = "twitch-eventsub-message-timestamp";
@@ -54,6 +55,32 @@ function verifyEventsubSignature(request, rawBody) {
   const actualSignature = String(request.headers[MESSAGE_SIGNATURE_HEADER] || "");
 
   return timingSafeCompare(expectedSignature, actualSignature);
+}
+
+async function sendChatAcknowledgement({
+  broadcasterUserId,
+  chatterLogin,
+  sourceMessageId,
+  text,
+}) {
+  if (!broadcasterUserId || !chatterLogin || !text) {
+    return;
+  }
+
+  try {
+    await sendTwitchChatMessage({
+      broadcasterUserId,
+      message: `@${chatterLogin} ${text}`,
+      replyParentMessageId: sourceMessageId,
+    });
+  } catch (error) {
+    console.warn("[eventsub/chat] failed to send acknowledgement", {
+      broadcasterUserId,
+      chatterLogin,
+      message: error.message,
+      details: error.details || null,
+    });
+  }
 }
 
 export default async function handler(request, response) {
@@ -111,13 +138,23 @@ export default async function handler(request, response) {
       return response.status(200).json({ ok: true, ignored: true });
     }
 
-    await saveAchievementClaim(command, {
+    const result = await saveAchievementClaim(command, {
       sourceMessageId: payload?.event?.message_id || "",
       chatterLogin: payload?.event?.chatter_user_login || "",
       chatterName: payload?.event?.chatter_user_name || "",
       broadcasterUserId,
       broadcasterLogin,
       submittedAt: payload?.event?.message?.sent_at || payload?.event?.created_at || "",
+    });
+
+    await sendChatAcknowledgement({
+      broadcasterUserId,
+      chatterLogin: payload?.event?.chatter_user_login || "",
+      sourceMessageId: payload?.event?.message_id || "",
+      text:
+        result?.status === "pending_moderation"
+          ? "отправил на модерацию!"
+          : "добавил!",
     });
 
     return response.status(200).json({ ok: true, accepted: true });
