@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import PageIntroCard from "../components/PageIntroCard";
+import { redirectToApi } from "../lib/api.js";
 
 function buildStatusMessage(status, channel, bot) {
   switch (status) {
@@ -45,7 +46,7 @@ function BotPage() {
   );
 
   const handleBotAuth = () => {
-    window.location.assign("/api/twitch/auth/start?kind=bot");
+    redirectToApi("/api/twitch/auth/start?kind=bot");
   };
 
   const handleBroadcasterAuth = (event) => {
@@ -56,7 +57,7 @@ function BotPage() {
       return;
     }
 
-    window.location.assign(
+    redirectToApi(
       `/api/twitch/auth/start?kind=broadcaster&broadcasterLogin=${encodeURIComponent(
         normalizedLogin
       )}`

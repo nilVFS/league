@@ -96,15 +96,42 @@ export function isAdminConfigured() {
   );
 }
 
+function getCookieSameSite() {
+  const value = String(process.env.COOKIE_SAME_SITE || "lax").trim().toLowerCase();
+
+  if (["lax", "strict", "none"].includes(value)) {
+    return value;
+  }
+
+  return "lax";
+}
+
+function shouldUseSecureCookies() {
+  return String(process.env.COOKIE_SECURE || "").trim().toLowerCase() === "true";
+}
+
+function buildCookieAttributes(maxAge) {
+  const attributes = [
+    "Path=/",
+    "HttpOnly",
+    `SameSite=${getCookieSameSite().charAt(0).toUpperCase()}${getCookieSameSite().slice(1)}`,
+    `Max-Age=${maxAge}`,
+  ];
+
+  if (shouldUseSecureCookies()) {
+    attributes.push("Secure");
+  }
+
+  return attributes.join("; ");
+}
+
 export function createAdminSessionCookie(email) {
   const token = createSessionToken(email);
-  return `${SESSION_COOKIE_NAME}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${
-    SESSION_TTL_MS / 1000
-  }`;
+  return `${SESSION_COOKIE_NAME}=${token}; ${buildCookieAttributes(SESSION_TTL_MS / 1000)}`;
 }
 
 export function createExpiredAdminSessionCookie() {
-  return `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+  return `${SESSION_COOKIE_NAME}=; ${buildCookieAttributes(0)}`;
 }
 
 export function getAdminSession(request) {

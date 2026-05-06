@@ -1,3 +1,5 @@
+import { buildApiUrl } from "./api.js";
+
 export function extractTwitchClipSlug(value) {
   const input = value.trim();
 
@@ -72,7 +74,7 @@ export async function fetchTwitchClipData(value) {
   }
 
   const response = await fetch(
-    `/api/twitch/clip-thumbnail?slug=${encodeURIComponent(slug)}`
+    buildApiUrl(`/api/twitch/clip-thumbnail?slug=${encodeURIComponent(slug)}`)
   );
 
   if (!response.ok) {
@@ -95,7 +97,7 @@ export async function fetchTwitchChannelProfile(value) {
   }
 
   const response = await fetch(
-    `/api/twitch/channel-profile?login=${encodeURIComponent(login)}`
+    buildApiUrl(`/api/twitch/channel-profile?login=${encodeURIComponent(login)}`)
   );
 
   if (!response.ok) {
@@ -123,7 +125,7 @@ export async function fetchTwitchLiveStatuses(values) {
     search.append("login", login);
   });
 
-  const response = await fetch(`/api/twitch/live-status?${search.toString()}`);
+  const response = await fetch(buildApiUrl(`/api/twitch/live-status?${search.toString()}`));
   if (!response.ok) {
     throw new Error("Не удалось проверить live-статусы участников.");
   }

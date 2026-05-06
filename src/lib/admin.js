@@ -1,3 +1,5 @@
+import { buildApiUrl } from "./api.js";
+
 async function readJson(response, fallbackMessage) {
   let payload = null;
 
@@ -15,17 +17,17 @@ async function readJson(response, fallbackMessage) {
 }
 
 export async function getAdminSession() {
-  const response = await fetch("/api/admin/session", {
-    credentials: "same-origin",
+  const response = await fetch(buildApiUrl("/api/admin/session"), {
+    credentials: "include",
   });
   const payload = await readJson(response, "Не удалось проверить сессию.");
   return payload.user;
 }
 
 export async function loginAdmin(email, password) {
-  const response = await fetch("/api/admin/login", {
+  const response = await fetch(buildApiUrl("/api/admin/login"), {
     method: "POST",
-    credentials: "same-origin",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -36,9 +38,9 @@ export async function loginAdmin(email, password) {
 }
 
 export async function logoutAdmin() {
-  const response = await fetch("/api/admin/logout", {
+  const response = await fetch(buildApiUrl("/api/admin/logout"), {
     method: "POST",
-    credentials: "same-origin",
+    credentials: "include",
   });
   await readJson(response, "Не удалось завершить сессию.");
 }

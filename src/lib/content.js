@@ -1,3 +1,5 @@
+import { buildApiUrl } from "./api.js";
+
 export const collectionNames = {
   clips: "clips",
   participants: "participants",
@@ -27,8 +29,8 @@ async function readJson(response, fallbackMessage) {
 }
 
 async function fetchCollection(name) {
-  const response = await fetch(`/api/content?collection=${encodeURIComponent(name)}`, {
-    credentials: "same-origin",
+  const response = await fetch(buildApiUrl(`/api/content?collection=${encodeURIComponent(name)}`), {
+    credentials: "include",
   });
   const payload = await readJson(response, "Не удалось загрузить коллекцию.");
   return payload.items || [];
@@ -60,9 +62,9 @@ export function subscribeToCollection(name, onData, onError) {
 }
 
 export async function createDocument(name, payload) {
-  const response = await fetch(`/api/content?collection=${encodeURIComponent(name)}`, {
+  const response = await fetch(buildApiUrl(`/api/content?collection=${encodeURIComponent(name)}`), {
     method: "POST",
-    credentials: "same-origin",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -75,10 +77,10 @@ export async function createDocument(name, payload) {
 
 export async function updateDocument(name, id, payload) {
   const response = await fetch(
-    `/api/content/${encodeURIComponent(name)}/${encodeURIComponent(id)}`,
+    buildApiUrl(`/api/content/${encodeURIComponent(name)}/${encodeURIComponent(id)}`),
     {
       method: "PATCH",
-      credentials: "same-origin",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
@@ -92,10 +94,10 @@ export async function updateDocument(name, id, payload) {
 
 export async function deleteDocument(name, id) {
   const response = await fetch(
-    `/api/content/${encodeURIComponent(name)}/${encodeURIComponent(id)}`,
+    buildApiUrl(`/api/content/${encodeURIComponent(name)}/${encodeURIComponent(id)}`),
     {
       method: "DELETE",
-      credentials: "same-origin",
+      credentials: "include",
     }
   );
 
