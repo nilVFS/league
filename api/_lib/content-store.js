@@ -116,7 +116,7 @@ async function getYdbSql() {
         credentialsProvider,
       });
 
-      const ready = await driver.ready(10000);
+      const ready = await driver.ready(AbortSignal.timeout(10000));
       if (!ready) {
         throw new Error("YDB driver did not become ready in time.");
       }
