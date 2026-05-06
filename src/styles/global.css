@@ -1163,6 +1163,17 @@ button {
   gap: 22px;
 }
 
+.admin-pane--split {
+  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+  align-items: start;
+}
+
+.admin-pane__column {
+  display: grid;
+  gap: 22px;
+  align-content: start;
+}
+
 .admin-grid {
   display: grid;
   gap: 18px;
@@ -1208,6 +1219,17 @@ button {
   margin: 0 0 18px;
   font-size: 22px;
   color: var(--gold-bright);
+}
+
+.admin-card__content {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-card__content--scroll {
+  max-height: 460px;
+  overflow: auto;
+  padding-right: 6px;
 }
 
 .admin-form {
@@ -1758,6 +1780,10 @@ button {
   }
 
   .admin-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-pane--split {
     grid-template-columns: 1fr;
   }
 

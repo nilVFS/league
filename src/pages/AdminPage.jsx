@@ -863,46 +863,48 @@ function AdminPage() {
 
                 <section className="admin-card">
                   <h2>Список клипов</h2>
-                  <div className="admin-list">
-                    {clipsState.items.map((clip) => (
-                      <div className="admin-list__item" key={clip.id}>
-                        <div>
-                          {clip.broadcasterName ? (
-                            <div className="admin-list__channel">{clip.broadcasterName}</div>
-                          ) : null}
-                          <strong>{clip.title}</strong>
-                          <div className="admin-list__meta">{clip.preview}</div>
+                  <div className="admin-card__content admin-card__content--scroll">
+                    <div className="admin-list">
+                      {clipsState.items.map((clip) => (
+                        <div className="admin-list__item" key={clip.id}>
+                          <div>
+                            {clip.broadcasterName ? (
+                              <div className="admin-list__channel">{clip.broadcasterName}</div>
+                            ) : null}
+                            <strong>{clip.title}</strong>
+                            <div className="admin-list__meta">{clip.preview}</div>
+                          </div>
+                          <div className="admin-list__actions">
+                            <button
+                              className="admin-button admin-button--ghost"
+                              onClick={() => {
+                                setEditingClipId(clip.id);
+                                setClipForm({
+                                  title: clip.title || "",
+                                  preview: clip.preview || "",
+                                  description: clip.description || "",
+                                  clipSlug: clip.clipSlug || "",
+                                  thumbnailUrl: clip.thumbnailUrl || "",
+                                  broadcasterName: clip.broadcasterName || "",
+                                });
+                                setActiveTab("clips");
+                              }}
+                              type="button"
+                            >
+                              Редактировать
+                            </button>
+                            <button
+                              className="admin-button admin-button--ghost"
+                              disabled={submitting === `delete-${clip.id}`}
+                              onClick={() => handleDelete(collectionNames.clips, clip.id, "Клип")}
+                              type="button"
+                            >
+                              Удалить
+                            </button>
+                          </div>
                         </div>
-                        <div className="admin-list__actions">
-                          <button
-                            className="admin-button admin-button--ghost"
-                            onClick={() => {
-                              setEditingClipId(clip.id);
-                              setClipForm({
-                                title: clip.title || "",
-                                preview: clip.preview || "",
-                                description: clip.description || "",
-                                clipSlug: clip.clipSlug || "",
-                                thumbnailUrl: clip.thumbnailUrl || "",
-                                broadcasterName: clip.broadcasterName || "",
-                              });
-                              setActiveTab("clips");
-                            }}
-                            type="button"
-                          >
-                            Редактировать
-                          </button>
-                          <button
-                            className="admin-button admin-button--ghost"
-                            disabled={submitting === `delete-${clip.id}`}
-                            onClick={() => handleDelete(collectionNames.clips, clip.id, "Клип")}
-                            type="button"
-                          >
-                            Удалить
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </section>
               </div>
@@ -1010,51 +1012,53 @@ function AdminPage() {
 
                 <section className="admin-card">
                   <h2>Список участников</h2>
-                  <div className="admin-list">
-                    {participantsState.items.map((participant) => (
-                      <div className="admin-list__item" key={participant.id}>
-                        <div>
-                          <strong>{participant.name}</strong>
-                          <div className="admin-list__meta">{participant.channel}</div>
-                          {participant.description ? (
-                            <div className="admin-list__meta">{participant.description}</div>
-                          ) : null}
+                  <div className="admin-card__content admin-card__content--scroll">
+                    <div className="admin-list">
+                      {participantsState.items.map((participant) => (
+                        <div className="admin-list__item" key={participant.id}>
+                          <div>
+                            <strong>{participant.name}</strong>
+                            <div className="admin-list__meta">{participant.channel}</div>
+                            {participant.description ? (
+                              <div className="admin-list__meta">{participant.description}</div>
+                            ) : null}
+                          </div>
+                          <div className="admin-list__actions">
+                            <button
+                              className="admin-button admin-button--ghost"
+                              onClick={() => {
+                                setEditingParticipantId(participant.id);
+                                setParticipantForm({
+                                  name: participant.name || "",
+                                  channel: participant.channel || "",
+                                  href: participant.href || "",
+                                  imageUrl: participant.imageUrl || "",
+                                  description: participant.description || "",
+                                });
+                                setActiveTab("participants");
+                              }}
+                              type="button"
+                            >
+                              Редактировать
+                            </button>
+                            <button
+                              className="admin-button admin-button--ghost"
+                              disabled={submitting === `delete-${participant.id}`}
+                              onClick={() =>
+                                handleDelete(
+                                  collectionNames.participants,
+                                  participant.id,
+                                  "Участник"
+                                )
+                              }
+                              type="button"
+                            >
+                              Удалить
+                            </button>
+                          </div>
                         </div>
-                        <div className="admin-list__actions">
-                          <button
-                            className="admin-button admin-button--ghost"
-                            onClick={() => {
-                              setEditingParticipantId(participant.id);
-                              setParticipantForm({
-                                name: participant.name || "",
-                                channel: participant.channel || "",
-                                href: participant.href || "",
-                                imageUrl: participant.imageUrl || "",
-                                description: participant.description || "",
-                              });
-                              setActiveTab("participants");
-                            }}
-                            type="button"
-                          >
-                            Редактировать
-                          </button>
-                          <button
-                            className="admin-button admin-button--ghost"
-                            disabled={submitting === `delete-${participant.id}`}
-                            onClick={() =>
-                              handleDelete(
-                                collectionNames.participants,
-                                participant.id,
-                                "Участник"
-                              )
-                            }
-                            type="button"
-                          >
-                            Удалить
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </section>
               </div>
@@ -1165,328 +1169,334 @@ function AdminPage() {
 
                 <section className="admin-card">
                   <h2>Список наград</h2>
-                  <div className="admin-list">
-                    {awardsState.items.map((award) => (
-                      <div className="admin-list__item" key={award.id}>
-                        <div>
-                          <strong>{award.title}</strong>
-                          <div className="admin-list__meta">
-                            #{award.code ?? "—"} • {(award.category || "Общие")} •{" "}
-                            {award.score} баллов
-                            {Number(award.bonusScore || 0)
-                              ? ` • +${award.bonusScore} первому`
-                              : ""}
+                  <div className="admin-card__content admin-card__content--scroll">
+                    <div className="admin-list">
+                      {awardsState.items.map((award) => (
+                        <div className="admin-list__item" key={award.id}>
+                          <div>
+                            <strong>{award.title}</strong>
+                            <div className="admin-list__meta">
+                              #{award.code ?? "—"} • {(award.category || "Общие")} •{" "}
+                              {award.score} баллов
+                              {Number(award.bonusScore || 0)
+                                ? ` • +${award.bonusScore} первому`
+                                : ""}
+                            </div>
+                            {award.description ? (
+                              <div className="admin-list__meta">{award.description}</div>
+                            ) : null}
                           </div>
-                          {award.description ? (
-                            <div className="admin-list__meta">{award.description}</div>
-                          ) : null}
+                          <div className="admin-list__actions">
+                            <button
+                              className="admin-button admin-button--ghost"
+                              onClick={() => {
+                                setEditingAwardId(award.id);
+                                setAwardForm({
+                                  code: String(award.code ?? ""),
+                                  category: award.category || "",
+                                  title: award.title || "",
+                                  score: String(award.score ?? ""),
+                                  bonusScore: String(award.bonusScore ?? ""),
+                                  description: award.description || "",
+                                });
+                                setActiveTab("awards");
+                              }}
+                              type="button"
+                            >
+                              Редактировать
+                            </button>
+                            <button
+                              className="admin-button admin-button--ghost"
+                              disabled={submitting === `delete-${award.id}`}
+                              onClick={() =>
+                                handleDelete(collectionNames.awards, award.id, "Награда")
+                              }
+                              type="button"
+                            >
+                              Удалить
+                            </button>
+                          </div>
                         </div>
-                        <div className="admin-list__actions">
-                          <button
-                            className="admin-button admin-button--ghost"
-                            onClick={() => {
-                              setEditingAwardId(award.id);
-                              setAwardForm({
-                                code: String(award.code ?? ""),
-                                category: award.category || "",
-                                title: award.title || "",
-                                score: String(award.score ?? ""),
-                                bonusScore: String(award.bonusScore ?? ""),
-                                description: award.description || "",
-                              });
-                              setActiveTab("awards");
-                            }}
-                            type="button"
-                          >
-                            Редактировать
-                          </button>
-                          <button
-                            className="admin-button admin-button--ghost"
-                            disabled={submitting === `delete-${award.id}`}
-                            onClick={() =>
-                              handleDelete(collectionNames.awards, award.id, "Награда")
-                            }
-                            type="button"
-                          >
-                            Удалить
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </section>
               </div>
             ) : null}
 
             {activeTab === "ladder" ? (
-              <div className="admin-pane">
-                <section className="admin-card">
-                  <h2>
-                    {editingLadderPlayerId
-                      ? "Редактировать игрока"
-                      : "Белый список ладдера"}
-                  </h2>
-                  <form className="admin-form" onSubmit={handleLadderPlayerSubmit}>
-                    <label className="admin-field">
-                      <span>Ник игрока</span>
-                      <input
-                        onChange={(event) =>
-                          setLadderPlayerForm((current) => ({
-                            ...current,
-                            playerTag: event.target.value,
-                          }))
-                        }
-                        placeholder="nick#1234"
-                        required
-                        type="text"
-                        value={ladderPlayerForm.playerTag}
-                      />
-                    </label>
+              <div className="admin-pane admin-pane--split">
+                <div className="admin-pane__column">
+                  <section className="admin-card">
+                    <h2>
+                      {editingLadderPlayerId
+                        ? "Редактировать игрока"
+                        : "Белый список ладдера"}
+                    </h2>
+                    <form className="admin-form" onSubmit={handleLadderPlayerSubmit}>
+                      <label className="admin-field">
+                        <span>Ник игрока</span>
+                        <input
+                          onChange={(event) =>
+                            setLadderPlayerForm((current) => ({
+                              ...current,
+                              playerTag: event.target.value,
+                            }))
+                          }
+                          placeholder="nick#1234"
+                          required
+                          type="text"
+                          value={ladderPlayerForm.playerTag}
+                        />
+                      </label>
 
-                    <div className="admin-actions">
-                      <button
-                        className="admin-button"
-                        disabled={submitting === "ladder-player"}
-                        type="submit"
-                      >
-                        {submitting === "ladder-player"
-                          ? "Сохраняем..."
-                          : editingLadderPlayerId
-                            ? "Сохранить игрока"
-                            : "Добавить в список"}
-                      </button>
-                      {editingLadderPlayerId ? (
+                      <div className="admin-actions">
                         <button
-                          className="admin-button admin-button--ghost"
-                          onClick={resetLadderPlayerForm}
-                          type="button"
+                          className="admin-button"
+                          disabled={submitting === "ladder-player"}
+                          type="submit"
                         >
-                          Отмена
+                          {submitting === "ladder-player"
+                            ? "Сохраняем..."
+                            : editingLadderPlayerId
+                              ? "Сохранить игрока"
+                              : "Добавить в список"}
                         </button>
-                      ) : null}
-                    </div>
-                  </form>
+                        {editingLadderPlayerId ? (
+                          <button
+                            className="admin-button admin-button--ghost"
+                            onClick={resetLadderPlayerForm}
+                            type="button"
+                          >
+                            Отмена
+                          </button>
+                        ) : null}
+                      </div>
+                    </form>
+                  </section>
 
-                  {ladderPlayersState.items.length ? (
-                    <div className="admin-list" style={{ marginTop: 18 }}>
-                      {ladderPlayersState.items.map((player) => (
-                        <div className="admin-list__item" key={player.id}>
-                          <div>
-                            <strong>{player.playerTag || player.tag}</strong>
-                          </div>
-                          <div className="admin-list__actions">
-                            <button
-                              className="admin-button admin-button--ghost"
-                              onClick={() => {
-                                setEditingLadderPlayerId(player.id);
-                                setLadderPlayerForm({
-                                  playerTag: player.playerTag || player.tag || "",
-                                });
-                              }}
-                              type="button"
-                            >
-                              Редактировать
-                            </button>
-                            <button
-                              className="admin-button admin-button--ghost"
-                              disabled={submitting === `delete-${player.id}`}
-                              onClick={() =>
-                                handleDelete(collectionNames.ladderPlayers, player.id, "Игрок")
-                              }
-                              type="button"
-                            >
-                              Удалить
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="state-box" style={{ marginTop: 18 }}>
-                      Пока нет игроков в белом списке. Неизвестные ники из чата будут
-                      уходить на модерацию.
-                    </div>
-                  )}
-                </section>
+                  <section className="admin-card">
+                    <h2>
+                      {editingAchievementClaimId
+                        ? "Редактировать выполнение"
+                        : "Добавить выполнение"}
+                    </h2>
+                    <form className="admin-form" onSubmit={handleAchievementClaimSubmit}>
+                      <label className="admin-field">
+                        <span>Ник игрока</span>
+                        <input
+                          list="ladder-player-tags"
+                          onChange={(event) =>
+                            setAchievementClaimForm((current) => ({
+                              ...current,
+                              playerTag: event.target.value,
+                            }))
+                          }
+                          placeholder="nick#1234"
+                          required
+                          type="text"
+                          value={achievementClaimForm.playerTag}
+                        />
+                        <datalist id="ladder-player-tags">
+                          {ladderPlayersState.items.map((player) => (
+                            <option key={player.id} value={player.playerTag || player.tag || ""} />
+                          ))}
+                        </datalist>
+                      </label>
 
-                <section className="admin-card">
-                  <h2>
-                    {editingAchievementClaimId
-                      ? "Редактировать выполнение"
-                      : "Добавить выполнение"}
-                  </h2>
-                  <form className="admin-form" onSubmit={handleAchievementClaimSubmit}>
-                    <label className="admin-field">
-                      <span>Ник игрока</span>
-                      <input
-                        list="ladder-player-tags"
-                        onChange={(event) =>
-                          setAchievementClaimForm((current) => ({
-                            ...current,
-                            playerTag: event.target.value,
-                          }))
-                        }
-                        placeholder="nick#1234"
-                        required
-                        type="text"
-                        value={achievementClaimForm.playerTag}
-                      />
-                      <datalist id="ladder-player-tags">
-                        {ladderPlayersState.items.map((player) => (
-                          <option
-                            key={player.id}
-                            value={player.playerTag || player.tag || ""}
-                          />
-                        ))}
-                      </datalist>
-                    </label>
+                      <label className="admin-field">
+                        <span>Номер достижения</span>
+                        <input
+                          min="1"
+                          onChange={(event) =>
+                            setAchievementClaimForm((current) => ({
+                              ...current,
+                              achievementCode: event.target.value,
+                            }))
+                          }
+                          required
+                          type="number"
+                          value={achievementClaimForm.achievementCode}
+                        />
+                      </label>
 
-                    <label className="admin-field">
-                      <span>Номер достижения</span>
-                      <input
-                        min="1"
-                        onChange={(event) =>
-                          setAchievementClaimForm((current) => ({
-                            ...current,
-                            achievementCode: event.target.value,
-                          }))
-                        }
-                        required
-                        type="number"
-                        value={achievementClaimForm.achievementCode}
-                      />
-                    </label>
+                      <label className="admin-field">
+                        <span>Ссылка на подтверждение</span>
+                        <input
+                          onChange={(event) =>
+                            setAchievementClaimForm((current) => ({
+                              ...current,
+                              proofUrl: event.target.value,
+                            }))
+                          }
+                          placeholder="https://..."
+                          type="url"
+                          value={achievementClaimForm.proofUrl}
+                        />
+                      </label>
 
-                    <label className="admin-field">
-                      <span>Ссылка на подтверждение</span>
-                      <input
-                        onChange={(event) =>
-                          setAchievementClaimForm((current) => ({
-                            ...current,
-                            proofUrl: event.target.value,
-                          }))
-                        }
-                        placeholder="https://..."
-                        type="url"
-                        value={achievementClaimForm.proofUrl}
-                      />
-                    </label>
+                      <label className="admin-field">
+                        <span>Статус</span>
+                        <select
+                          onChange={(event) =>
+                            setAchievementClaimForm((current) => ({
+                              ...current,
+                              status: event.target.value,
+                            }))
+                          }
+                          value={achievementClaimForm.status}
+                        >
+                          <option value="accepted">accepted</option>
+                          <option value="rejected">rejected</option>
+                        </select>
+                      </label>
 
-                    <label className="admin-field">
-                      <span>Статус</span>
-                      <select
-                        onChange={(event) =>
-                          setAchievementClaimForm((current) => ({
-                            ...current,
-                            status: event.target.value,
-                          }))
-                        }
-                        value={achievementClaimForm.status}
-                      >
-                        <option value="accepted">accepted</option>
-                        <option value="rejected">rejected</option>
-                      </select>
-                    </label>
-
-                    <div className="admin-actions">
-                      <button
-                        className="admin-button"
-                        disabled={submitting === "achievement-claim"}
-                        type="submit"
-                      >
-                        {submitting === "achievement-claim"
-                          ? "Сохраняем..."
-                          : editingAchievementClaimId
-                            ? "Сохранить выполнение"
-                            : "Добавить выполнение"}
-                      </button>
-                      {editingAchievementClaimId ? (
+                      <div className="admin-actions">
                         <button
-                          className="admin-button admin-button--ghost"
-                          onClick={resetAchievementClaimForm}
-                          type="button"
+                          className="admin-button"
+                          disabled={submitting === "achievement-claim"}
+                          type="submit"
                         >
-                          Отмена
+                          {submitting === "achievement-claim"
+                            ? "Сохраняем..."
+                            : editingAchievementClaimId
+                              ? "Сохранить выполнение"
+                              : "Добавить выполнение"}
                         </button>
-                      ) : null}
-                    </div>
-                  </form>
-                </section>
+                        {editingAchievementClaimId ? (
+                          <button
+                            className="admin-button admin-button--ghost"
+                            onClick={resetAchievementClaimForm}
+                            type="button"
+                          >
+                            Отмена
+                          </button>
+                        ) : null}
+                      </div>
+                    </form>
+                  </section>
+                </div>
 
-                <section className="admin-card">
-                  <h2>Список выполнений</h2>
-                  {achievementClaimsState.items.length ? (
-                    <div className="admin-list">
-                      {achievementClaimsState.items.map((claim) => (
-                        <div className="admin-list__item" key={claim.id}>
-                          <div>
-                            <strong>{claim.playerTag || claim.playerTagNormalized}</strong>
-                            <div className="admin-list__meta">
-                              #{claim.achievementCode} • {claim.achievementTitle || "Без названия"} •{" "}
-                              {claim.achievementScore ?? 0} баллов
-                              {Number(claim.achievementBonusScore || 0)
-                                ? ` • бонус первому ${claim.achievementBonusScore}`
-                                : ""}
-                            </div>
-                            <div className="admin-list__meta">
-                              Статус: {claim.status || "accepted"}
-                              {claim.chatterLogin ? ` • отправил ${claim.chatterLogin}` : ""}
-                              {claim.broadcasterLogin
-                                ? ` • канал ${claim.broadcasterLogin}`
-                                : ""}
-                            </div>
-                            {claim.proofUrl ? (
-                              <div className="admin-list__meta">
-                                <a
-                                  href={claim.proofUrl}
-                                  rel="noreferrer noopener"
-                                  target="_blank"
-                                >
-                                  {claim.proofUrl}
-                                </a>
+                <div className="admin-pane__column">
+                  <section className="admin-card">
+                    <h2>Игроки ладдера</h2>
+                    {ladderPlayersState.items.length ? (
+                      <div className="admin-card__content admin-card__content--scroll">
+                        <div className="admin-list">
+                          {ladderPlayersState.items.map((player) => (
+                            <div className="admin-list__item" key={player.id}>
+                              <div>
+                                <strong>{player.playerTag || player.tag}</strong>
                               </div>
-                            ) : null}
-                          </div>
-
-                          <div className="admin-list__actions">
-                            <button
-                              className="admin-button admin-button--ghost"
-                              onClick={() => {
-                                setEditingAchievementClaimId(claim.id);
-                                setAchievementClaimForm({
-                                  playerTag: claim.playerTag || "",
-                                  achievementCode: String(claim.achievementCode ?? ""),
-                                  proofUrl: claim.proofUrl || "",
-                                  status: claim.status || "accepted",
-                                });
-                                setActiveTab("ladder");
-                              }}
-                              type="button"
-                            >
-                              Редактировать
-                            </button>
-                            <button
-                              className="admin-button admin-button--ghost"
-                              disabled={submitting === `delete-${claim.id}`}
-                              onClick={() =>
-                                handleDelete(
-                                  collectionNames.achievementClaims,
-                                  claim.id,
-                                  "Выполнение"
-                                )
-                              }
-                              type="button"
-                            >
-                              Удалить
-                            </button>
-                          </div>
+                              <div className="admin-list__actions">
+                                <button
+                                  className="admin-button admin-button--ghost"
+                                  onClick={() => {
+                                    setEditingLadderPlayerId(player.id);
+                                    setLadderPlayerForm({
+                                      playerTag: player.playerTag || player.tag || "",
+                                    });
+                                  }}
+                                  type="button"
+                                >
+                                  Редактировать
+                                </button>
+                                <button
+                                  className="admin-button admin-button--ghost"
+                                  disabled={submitting === `delete-${player.id}`}
+                                  onClick={() =>
+                                    handleDelete(collectionNames.ladderPlayers, player.id, "Игрок")
+                                  }
+                                  type="button"
+                                >
+                                  Удалить
+                                </button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="state-box">Пока нет выполнений в ладдере.</div>
-                  )}
-                </section>
+                      </div>
+                    ) : (
+                      <div className="state-box">
+                        Пока нет игроков в белом списке. Неизвестные ники из чата будут
+                        уходить на модерацию.
+                      </div>
+                    )}
+                  </section>
+
+                  <section className="admin-card">
+                    <h2>Список выполнений</h2>
+                    {achievementClaimsState.items.length ? (
+                      <div className="admin-card__content admin-card__content--scroll">
+                        <div className="admin-list">
+                          {achievementClaimsState.items.map((claim) => (
+                            <div className="admin-list__item" key={claim.id}>
+                              <div>
+                                <strong>{claim.playerTag || claim.playerTagNormalized}</strong>
+                                <div className="admin-list__meta">
+                                  #{claim.achievementCode} • {claim.achievementTitle || "Без названия"} •{" "}
+                                  {claim.achievementScore ?? 0} баллов
+                                  {Number(claim.achievementBonusScore || 0)
+                                    ? ` • бонус первому ${claim.achievementBonusScore}`
+                                    : ""}
+                                </div>
+                                <div className="admin-list__meta">
+                                  Статус: {claim.status || "accepted"}
+                                  {claim.chatterLogin ? ` • отправил ${claim.chatterLogin}` : ""}
+                                  {claim.broadcasterLogin
+                                    ? ` • канал ${claim.broadcasterLogin}`
+                                    : ""}
+                                </div>
+                                {claim.proofUrl ? (
+                                  <div className="admin-list__meta">
+                                    <a href={claim.proofUrl} rel="noreferrer noopener" target="_blank">
+                                      {claim.proofUrl}
+                                    </a>
+                                  </div>
+                                ) : null}
+                              </div>
+
+                              <div className="admin-list__actions">
+                                <button
+                                  className="admin-button admin-button--ghost"
+                                  onClick={() => {
+                                    setEditingAchievementClaimId(claim.id);
+                                    setAchievementClaimForm({
+                                      playerTag: claim.playerTag || "",
+                                      achievementCode: String(claim.achievementCode ?? ""),
+                                      proofUrl: claim.proofUrl || "",
+                                      status: claim.status || "accepted",
+                                    });
+                                    setActiveTab("ladder");
+                                  }}
+                                  type="button"
+                                >
+                                  Редактировать
+                                </button>
+                                <button
+                                  className="admin-button admin-button--ghost"
+                                  disabled={submitting === `delete-${claim.id}`}
+                                  onClick={() =>
+                                    handleDelete(
+                                      collectionNames.achievementClaims,
+                                      claim.id,
+                                      "Выполнение"
+                                    )
+                                  }
+                                  type="button"
+                                >
+                                  Удалить
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="state-box">Пока нет выполнений в ладдере.</div>
+                    )}
+                  </section>
+                </div>
               </div>
             ) : null}
 
@@ -1495,9 +1505,10 @@ function AdminPage() {
                 <section className="admin-card">
                   <h2>Запросы на модерацию</h2>
                   {pendingSuggestions.length ? (
-                    <div className="admin-list">
-                      {pendingSuggestions.map((suggestion) => (
-                        <div className="admin-list__item" key={suggestion.id}>
+                    <div className="admin-card__content admin-card__content--scroll">
+                      <div className="admin-list">
+                        {pendingSuggestions.map((suggestion) => (
+                          <div className="admin-list__item" key={suggestion.id}>
                           <div>
                             <strong>
                               {suggestion.type === "clip"
@@ -1579,8 +1590,9 @@ function AdminPage() {
                               Отклонить
                             </button>
                           </div>
-                        </div>
-                      ))}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ) : (
                     <div className="state-box">Пока нет запросов на модерацию.</div>
