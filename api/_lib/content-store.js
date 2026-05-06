@@ -203,6 +203,7 @@ async function listCollectionFromYdb(name) {
       return {
         ...payload,
         id: payload.id || row.id,
+        _storageId: row.id,
         createdAt: payload.createdAt || row.created_at || "",
         updatedAt: payload.updatedAt || row.updated_at || "",
       };
@@ -245,7 +246,12 @@ async function deleteDocumentFromYdb(name, id) {
 
 async function listCollectionFromFile(name) {
   const store = await readStore();
-  return [...(store[name] || [])].sort(compareByCreatedAtDesc);
+  return [...(store[name] || [])]
+    .map((item) => ({
+      ...item,
+      _storageId: item._storageId || item.id,
+    }))
+    .sort(compareByCreatedAtDesc);
 }
 
 async function createDocumentInFile(name, payload) {
@@ -257,6 +263,8 @@ async function createDocumentInFile(name, payload) {
     createdAt: normalizeTimestamp(payload.createdAt, nowIso),
     updatedAt: normalizeTimestamp(payload.updatedAt, nowIso),
   };
+
+  document._storageId = document.id;
 
   store[name] = [...(store[name] || []), document];
   await writeStore(store);
@@ -280,6 +288,7 @@ async function updateDocumentInFile(name, id, payload) {
     ...current,
     ...payload,
     id: current.id,
+    _storageId: current._storageId || current.id,
     createdAt: current.createdAt,
     updatedAt: new Date().toISOString(),
   };
@@ -336,6 +345,8 @@ export async function createDocument(name, payload) {
     updatedAt: normalizeTimestamp(payload.updatedAt, nowIso),
   };
 
+  document._storageId = document.id;
+
   await upsertDocumentToYdb(name, document);
   return document;
 }
@@ -358,6 +369,7 @@ export async function updateDocument(name, id, payload) {
     ...current,
     ...payload,
     id: current.id,
+    _storageId: current._storageId || current.id,
     createdAt: current.createdAt,
     updatedAt: new Date().toISOString(),
   };

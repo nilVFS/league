@@ -70,6 +70,10 @@ function normalizePlayerTag(value = "") {
     .toLowerCase();
 }
 
+function getDocumentStorageId(item) {
+  return item?._storageId || item?.id || "";
+}
+
 function AdminPage() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -151,11 +155,11 @@ function AdminPage() {
         groups.set(key, {
           key,
           playerTag,
-          playerId: player.id,
+          playerId: getDocumentStorageId(player),
           claims: [],
         });
       } else if (!groups.get(key).playerId) {
-        groups.get(key).playerId = player.id;
+        groups.get(key).playerId = getDocumentStorageId(player);
       }
     });
 
@@ -539,7 +543,7 @@ function AdminPage() {
 
       player.claims.forEach((claim) => {
         deletions.push(
-          deleteDocument(collectionNames.achievementClaims, claim.id)
+          deleteDocument(collectionNames.achievementClaims, getDocumentStorageId(claim))
         );
       });
 
@@ -551,7 +555,9 @@ function AdminPage() {
 
       if (
         editingAchievementClaimId &&
-        player.claims.some((claim) => claim.id === editingAchievementClaimId)
+        player.claims.some(
+          (claim) => getDocumentStorageId(claim) === editingAchievementClaimId
+        )
       ) {
         resetAchievementClaimForm();
       }
@@ -584,7 +590,7 @@ function AdminPage() {
       const duplicate = ladderPlayersState.items.find(
         (item) =>
           normalizePlayerTag(item.playerTag || item.tag || "") === normalizedPlayerTag &&
-          item.id !== editingLadderPlayerId
+          getDocumentStorageId(item) !== editingLadderPlayerId
       );
 
       if (duplicate) {
@@ -783,7 +789,11 @@ function AdminPage() {
         );
 
         if (existingClaim) {
-          await updateDocument(collectionNames.achievementClaims, existingClaim.id, claimPayload);
+          await updateDocument(
+            collectionNames.achievementClaims,
+            getDocumentStorageId(existingClaim),
+            claimPayload
+          );
         } else {
           await createDocument(collectionNames.achievementClaims, claimPayload);
         }
@@ -1688,7 +1698,9 @@ function AdminPage() {
                                       <button
                                         className="admin-button admin-button--ghost"
                                         onClick={() => {
-                                          setEditingAchievementClaimId(claim.id);
+                                          setEditingAchievementClaimId(
+                                            getDocumentStorageId(claim)
+                                          );
                                           setAchievementClaimForm({
                                             playerTag: claim.playerTag || "",
                                             achievementCode: String(claim.achievementCode ?? ""),
@@ -1706,7 +1718,7 @@ function AdminPage() {
                                         onClick={() =>
                                           handleDelete(
                                             collectionNames.achievementClaims,
-                                            claim.id,
+                                            getDocumentStorageId(claim),
                                             "Выполнение"
                                           )
                                         }
