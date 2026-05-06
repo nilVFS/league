@@ -1,6 +1,9 @@
 import crypto from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { Driver } from "@ydbjs/core";
+import { query } from "@ydbjs/query";
+import { ServiceAccountCredentialsProvider } from "@ydbjs/auth-yandex-cloud";
 
 export const collectionNames = {
   clips: "clips",
@@ -10,6 +13,7 @@ export const collectionNames = {
 };
 
 const allowedCollections = new Set(Object.values(collectionNames));
+const YDB_TABLE_NAME = "content_items";
 
 const defaultStore = {
   clips: [],
@@ -18,8 +22,42 @@ const defaultStore = {
   suggestions: [],
 };
 
+let driverPromise = null;
+let schemaPromise = null;
+
 function getStorePath() {
   return process.env.CONTENT_STORE_PATH || path.join(process.cwd(), ".data", "content-store.json");
+}
+
+function isYdbConfigured() {
+  return Boolean(
+    process.env.YDB_ENDPOINT &&
+      process.env.YDB_DATABASE &&
+      process.env.YDB_SERVICE_ACCOUNT_KEY_JSON
+  );
+}
+
+function assertCollection(name) {
+  if (!allowedCollections.has(name)) {
+    const error = new Error(`Неизвестная коллекция: ${name}`);
+    error.statusCode = 400;
+    throw error;
+  }
+}
+
+function normalizeTimestamp(value, fallbackValue) {
+  if (typeof value === "string" && value.trim()) {
+    return value.trim();
+  }
+
+  return fallbackValue;
+}
+
+function compareByCreatedAtDesc(left, right) {
+  const leftTime = Date.parse(left.createdAt || left.updatedAt || "") || 0;
+  const rightTime = Date.parse(right.createdAt || right.updatedAt || "") || 0;
+
+  return rightTime - leftTime;
 }
 
 async function ensureStoreFile() {
@@ -51,43 +89,130 @@ async function writeStore(store) {
   await writeFile(storePath, JSON.stringify(store, null, 2), "utf8");
 }
 
-function assertCollection(name) {
-  if (!allowedCollections.has(name)) {
-    const error = new Error(`Неизвестная коллекция: ${name}`);
-    error.statusCode = 400;
+function parseServiceAccountKey() {
+  try {
+    return JSON.parse(process.env.YDB_SERVICE_ACCOUNT_KEY_JSON || "{}");
+  } catch {
+    const error = new Error("YDB_SERVICE_ACCOUNT_KEY_JSON содержит невалидный JSON.");
+    error.statusCode = 500;
     throw error;
   }
 }
 
-function normalizeTimestamp(value, fallbackValue) {
-  if (typeof value === "string" && value.trim()) {
-    return value.trim();
+function getYdbConnectionString() {
+  const endpoint = String(process.env.YDB_ENDPOINT || "").trim().replace(/\/+$/, "");
+  const database = String(process.env.YDB_DATABASE || "").trim();
+
+  return `${endpoint}?database=${database}`;
+}
+
+async function getYdbSql() {
+  if (!driverPromise) {
+    driverPromise = (async () => {
+      const credentialsProvider = new ServiceAccountCredentialsProvider(
+        parseServiceAccountKey()
+      );
+      const driver = new Driver(getYdbConnectionString(), {
+        credentialsProvider,
+      });
+
+      const ready = await driver.ready(10000);
+      if (!ready) {
+        throw new Error("YDB driver did not become ready in time.");
+      }
+
+      return {
+        driver,
+        sql: query(driver),
+      };
+    })();
   }
 
-  return fallbackValue;
+  return driverPromise;
 }
 
-function compareByCreatedAtDesc(left, right) {
-  const leftTime = Date.parse(left.createdAt || left.updatedAt || "") || 0;
-  const rightTime = Date.parse(right.createdAt || right.updatedAt || "") || 0;
+async function ensureYdbSchema() {
+  if (!schemaPromise) {
+    schemaPromise = (async () => {
+      const { sql } = await getYdbSql();
 
-  return rightTime - leftTime;
+      await sql`
+        CREATE TABLE IF NOT EXISTS ${sql.identifier(YDB_TABLE_NAME)} (
+          collection_name Utf8 NOT NULL,
+          id Utf8 NOT NULL,
+          created_at Utf8,
+          updated_at Utf8,
+          data_json Utf8,
+          PRIMARY KEY (collection_name, id)
+        );
+      `;
+    })();
+  }
+
+  return schemaPromise;
 }
 
-export async function listCollection(name) {
-  assertCollection(name);
+async function listCollectionFromYdb(name) {
+  await ensureYdbSchema();
+  const { sql } = await getYdbSql();
+  const [rows = []] = await sql`
+    SELECT id, created_at, updated_at, data_json
+    FROM ${sql.identifier(YDB_TABLE_NAME)}
+    WHERE collection_name = ${name};
+  `;
+
+  return rows
+    .map((row) => {
+      const payload = JSON.parse(row.data_json || "{}");
+      return {
+        ...payload,
+        id: payload.id || row.id,
+        createdAt: payload.createdAt || row.created_at || "",
+        updatedAt: payload.updatedAt || row.updated_at || "",
+      };
+    })
+    .sort(compareByCreatedAtDesc);
+}
+
+async function getDocumentFromYdb(name, id) {
+  const items = await listCollectionFromYdb(name);
+  return items.find((item) => item.id === id) || null;
+}
+
+async function upsertDocumentToYdb(name, document) {
+  await ensureYdbSchema();
+  const { sql } = await getYdbSql();
+
+  await sql`
+    UPSERT INTO ${sql.identifier(YDB_TABLE_NAME)}
+      (collection_name, id, created_at, updated_at, data_json)
+    VALUES
+      (
+        ${name},
+        ${document.id},
+        ${document.createdAt},
+        ${document.updatedAt},
+        ${JSON.stringify(document)}
+      );
+  `;
+}
+
+async function deleteDocumentFromYdb(name, id) {
+  await ensureYdbSchema();
+  const { sql } = await getYdbSql();
+
+  await sql`
+    DELETE FROM ${sql.identifier(YDB_TABLE_NAME)}
+    WHERE collection_name = ${name} AND id = ${id};
+  `;
+}
+
+async function listCollectionFromFile(name) {
   const store = await readStore();
   return [...(store[name] || [])].sort(compareByCreatedAtDesc);
 }
 
-export async function getCollectionCount(name) {
-  assertCollection(name);
-  const store = await readStore();
-  return (store[name] || []).length;
-}
-
-export async function createDocument(name, payload) {
-  assertCollection(name);
+async function createDocumentInFile(name, payload) {
   const store = await readStore();
   const nowIso = new Date().toISOString();
   const document = {
@@ -103,8 +228,7 @@ export async function createDocument(name, payload) {
   return document;
 }
 
-export async function updateDocument(name, id, payload) {
-  assertCollection(name);
+async function updateDocumentInFile(name, id, payload) {
   const store = await readStore();
   const items = store[name] || [];
   const index = items.findIndex((item) => item.id === id);
@@ -131,8 +255,7 @@ export async function updateDocument(name, id, payload) {
   return next;
 }
 
-export async function deleteDocument(name, id) {
-  assertCollection(name);
+async function deleteDocumentFromFile(name, id) {
   const store = await readStore();
   const items = store[name] || [];
   const nextItems = items.filter((item) => item.id !== id);
@@ -145,4 +268,81 @@ export async function deleteDocument(name, id) {
 
   store[name] = nextItems;
   await writeStore(store);
+}
+
+export async function listCollection(name) {
+  assertCollection(name);
+  if (isYdbConfigured()) {
+    return listCollectionFromYdb(name);
+  }
+
+  return listCollectionFromFile(name);
+}
+
+export async function getCollectionCount(name) {
+  assertCollection(name);
+  const items = await listCollection(name);
+  return items.length;
+}
+
+export async function createDocument(name, payload) {
+  assertCollection(name);
+
+  if (!isYdbConfigured()) {
+    return createDocumentInFile(name, payload);
+  }
+
+  const nowIso = new Date().toISOString();
+  const document = {
+    id: crypto.randomUUID(),
+    ...payload,
+    createdAt: normalizeTimestamp(payload.createdAt, nowIso),
+    updatedAt: normalizeTimestamp(payload.updatedAt, nowIso),
+  };
+
+  await upsertDocumentToYdb(name, document);
+  return document;
+}
+
+export async function updateDocument(name, id, payload) {
+  assertCollection(name);
+
+  if (!isYdbConfigured()) {
+    return updateDocumentInFile(name, id, payload);
+  }
+
+  const current = await getDocumentFromYdb(name, id);
+  if (!current) {
+    const error = new Error("Документ не найден.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const next = {
+    ...current,
+    ...payload,
+    id: current.id,
+    createdAt: current.createdAt,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await upsertDocumentToYdb(name, next);
+  return next;
+}
+
+export async function deleteDocument(name, id) {
+  assertCollection(name);
+
+  if (!isYdbConfigured()) {
+    return deleteDocumentFromFile(name, id);
+  }
+
+  const current = await getDocumentFromYdb(name, id);
+  if (!current) {
+    const error = new Error("Документ не найден.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  await deleteDocumentFromYdb(name, id);
 }

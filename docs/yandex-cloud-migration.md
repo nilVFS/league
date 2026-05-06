@@ -6,34 +6,43 @@
 - Админ-логин теперь идет через cookie-сессию и API `/api/admin/*`.
 - Контент теперь идет через API `/api/content/*`.
 - Крон импорта клипов больше не ходит в Firestore.
-- Данные по умолчанию хранятся в локальном JSON-файле `.data/content-store.json`.
+- API умеет работать с `YDB` через `YDB_ENDPOINT`, `YDB_DATABASE`, `YDB_SERVICE_ACCOUNT_KEY_JSON`.
+- Если переменные YDB не заданы, локально включается fallback на `.data/content-store.json`.
 
 ## Что это дает
 
-Теперь приложение отделено от Firebase по коду. Следующий шаг до Yandex Cloud уже инфраструктурный:
+Теперь приложение отделено от Firebase по коду и может работать в схеме:
 
-1. Заменить файловый store на YDB.
-2. Вынести загрузку файлов в Object Storage.
-3. Развернуть API в Yandex Cloud Functions или Serverless Containers.
+1. `Frontend + API` остаются на `Vercel`.
+2. `YDB Serverless` живет в `Yandex Cloud`.
+3. `Vercel env` хранит ключ сервисного аккаунта и параметры подключения к YDB.
 
-## Рекомендуемая схема в Yandex Cloud
+## Текущая прод-схема
 
-- `Object Storage` для фронтенда и файлов.
-- `API Gateway` как публичная точка входа.
-- `Serverless Containers` для этого Node API.
-- `YDB Serverless` вместо `.data/content-store.json`.
-- `Cloud Functions` для простых cron/webhook задач при желании.
+- `Vercel` для фронтенда и `/api/*`.
+- `YDB Serverless` для контента и админских данных.
+- `Yandex Cloud Service Account` с ролью `ydb.editor`.
 
-## Минимальная замена хранилища на YDB
+## Что нужно в env
 
-В этом проекте точка замены одна:
+```env
+YDB_ENDPOINT=
+YDB_DATABASE=
+YDB_SERVICE_ACCOUNT_KEY_JSON=
+ADMIN_EMAIL=
+ADMIN_PASSWORD=
+ADMIN_SESSION_SECRET=
+TWITCH_CLIENT_ID=
+TWITCH_CLIENT_SECRET=
+CRON_SECRET=
+```
+
+## Где точка интеграции
 
 - [content-store.js](/Users/vladislavnizev/Documents/lg/api/_lib/content-store.js)
-
-Если переписать функции `listCollection`, `createDocument`, `updateDocument`, `deleteDocument` на YDB, остальная часть приложения продолжит работать без изменений.
 
 ## Что еще осталось
 
 - `uploadFile()` пока намеренно не подключен и должен уйти в `Object Storage`.
 - Обновления данных теперь идут polling-раз в 15 секунд, а не realtime как в Firestore.
-- Для production на Yandex Cloud лучше держать API в `Serverless Containers`, потому что тут уже несколько маршрутов и cookie-сессии.
+- Если когда-нибудь захочется убрать Vercel API, этот же backend можно будет посадить в `Serverless Containers`.
