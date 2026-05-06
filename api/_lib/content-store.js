@@ -213,7 +213,7 @@ async function listCollectionFromYdb(name) {
 
 async function getDocumentFromYdb(name, id) {
   const items = await listCollectionFromYdb(name);
-  return items.find((item) => item.id === id) || null;
+  return items.find((item) => item.id === id || item._storageId === id) || null;
 }
 
 async function upsertDocumentToYdb(name, document) {
@@ -275,7 +275,9 @@ async function createDocumentInFile(name, payload) {
 async function updateDocumentInFile(name, id, payload) {
   const store = await readStore();
   const items = store[name] || [];
-  const index = items.findIndex((item) => item.id === id);
+  const index = items.findIndex(
+    (item) => item.id === id || item._storageId === id
+  );
 
   if (index < 0) {
     const error = new Error("Документ не найден.");
@@ -303,7 +305,9 @@ async function updateDocumentInFile(name, id, payload) {
 async function deleteDocumentFromFile(name, id) {
   const store = await readStore();
   const items = store[name] || [];
-  const nextItems = items.filter((item) => item.id !== id);
+  const nextItems = items.filter(
+    (item) => item.id !== id && item._storageId !== id
+  );
 
   if (nextItems.length === items.length) {
     const error = new Error("Документ не найден.");
