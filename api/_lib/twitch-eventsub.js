@@ -187,6 +187,20 @@ export async function listEventsubSubscriptions(accessToken) {
   return payload?.data || [];
 }
 
+async function deleteEventsubSubscription(subscriptionId, accessToken) {
+  if (!subscriptionId) {
+    return;
+  }
+
+  await twitchApiRequest(
+    `/eventsub/subscriptions?id=${encodeURIComponent(String(subscriptionId))}`,
+    accessToken,
+    {
+      method: "DELETE",
+    }
+  );
+}
+
 export async function createOrReuseChatMessageSubscription({
   broadcasterUserId,
   callbackUrl,
@@ -194,7 +208,7 @@ export async function createOrReuseChatMessageSubscription({
   const { botUserId, eventsubSecret } = getTwitchConfig();
   const accessToken = await getTwitchAppAccessToken();
   const subscriptions = await listEventsubSubscriptions(accessToken);
-  const existingSubscription = subscriptions.find(
+  const matchingSubscriptions = subscriptions.filter(
     (subscription) =>
       subscription?.type === "channel.chat.message" &&
       String(subscription?.condition?.broadcaster_user_id || "") ===
@@ -204,12 +218,25 @@ export async function createOrReuseChatMessageSubscription({
       subscription?.status !== "user_removed"
   );
 
+  const callbackNormalized = String(callbackUrl || "").trim().replace(/\/+$/, "");
+  const existingSubscription = matchingSubscriptions.find(
+    (subscription) =>
+      String(subscription?.transport?.callback || "").trim().replace(/\/+$/, "") ===
+      callbackNormalized
+  );
+
   if (existingSubscription) {
     return {
       subscription: existingSubscription,
       reused: true,
     };
   }
+
+  await Promise.all(
+    matchingSubscriptions.map((subscription) =>
+      deleteEventsubSubscription(subscription?.id, accessToken)
+    )
+  );
 
   const payload = await twitchApiRequest("/eventsub/subscriptions", accessToken, {
     method: "POST",
