@@ -1,13 +1,10 @@
-```gitignore
-# Dependencies
+.data/
 node_modules/
-
-# Build artifacts
 dist/
 build/
 target/
-
-# Python
+coverage/
+htmlcov/
 __pycache__/
 *.pyc
 *.pyo
@@ -18,31 +15,17 @@ venv/
 .venv/
 .ENV
 .python-version
-
-# Logs
 *.log
-
-# Environment variables
 .env
 .env.local
 .env.*
-
-# IDE
+!.env.example
 .vscode/
 .idea/
 *.swp
 *.swo
-
-# OS
 .DS_Store
 Thumbs.db
-
-# Coverage
-coverage/
-htmlcov/
-.coverage
-
-# Compressed files
 *.zip
 *.gz
 *.tar
@@ -65,4 +48,3 @@ htmlcov/
 *.tar.bz2
 *.tar.xz
 *.tar.zst
-```

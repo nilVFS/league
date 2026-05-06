@@ -1,24 +1,3 @@
-import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  getDocs,
-  limit,
-  onSnapshot,
-  orderBy,
-  query,
-  serverTimestamp,
-  updateDoc,
-  writeBatch,
-} from "firebase/firestore";
-import {
-  getDownloadURL,
-  ref,
-  uploadBytes,
-} from "firebase/storage";
-import { db, storage } from "./firebase";
-
 export const collectionNames = {
   clips: "clips",
   participants: "participants",
@@ -26,64 +5,118 @@ export const collectionNames = {
   suggestions: "suggestions",
 };
 
-export function subscribeToCollection(name, onData, onError) {
-  const collectionQuery = query(
-    collection(db, name),
-    orderBy("createdAt", "desc")
-  );
+const POLL_INTERVAL_MS = 15000;
 
-  return onSnapshot(
-    collectionQuery,
-    (snapshot) => {
-      const items = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      onData(items);
-    },
-    onError
-  );
+async function readJson(response, fallbackMessage) {
+  let payload = null;
+
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok) {
+    throw new Error(payload?.error || fallbackMessage);
+  }
+
+  return payload;
+}
+
+async function fetchCollection(name) {
+  const response = await fetch(`/api/content?collection=${encodeURIComponent(name)}`, {
+    credentials: "same-origin",
+  });
+  const payload = await readJson(response, "Не удалось загрузить коллекцию.");
+  return payload.items || [];
+}
+
+export function subscribeToCollection(name, onData, onError) {
+  let stopped = false;
+
+  const load = async () => {
+    try {
+      const items = await fetchCollection(name);
+      if (!stopped) {
+        onData(items);
+      }
+    } catch (error) {
+      if (!stopped) {
+        onError(error);
+      }
+    }
+  };
+
+  load();
+  const intervalId = window.setInterval(load, POLL_INTERVAL_MS);
+
+  return () => {
+    stopped = true;
+    window.clearInterval(intervalId);
+  };
 }
 
 export async function createDocument(name, payload) {
-  return addDoc(collection(db, name), {
-    ...payload,
-    createdAt: serverTimestamp(),
+  const response = await fetch(`/api/content?collection=${encodeURIComponent(name)}`, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
   });
+
+  const nextPayload = await readJson(response, "Не удалось создать запись.");
+  return nextPayload.item;
 }
 
 export async function updateDocument(name, id, payload) {
-  return updateDoc(doc(db, name, id), {
-    ...payload,
-    updatedAt: serverTimestamp(),
-  });
+  const response = await fetch(
+    `/api/content/${encodeURIComponent(name)}/${encodeURIComponent(id)}`,
+    {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }
+  );
+
+  const nextPayload = await readJson(response, "Не удалось обновить запись.");
+  return nextPayload.item;
 }
 
 export async function deleteDocument(name, id) {
-  return deleteDoc(doc(db, name, id));
+  const response = await fetch(
+    `/api/content/${encodeURIComponent(name)}/${encodeURIComponent(id)}`,
+    {
+      method: "DELETE",
+      credentials: "same-origin",
+    }
+  );
+
+  await readJson(response, "Не удалось удалить запись.");
 }
 
 export async function isCollectionEmpty(name) {
-  const snapshot = await getDocs(query(collection(db, name), limit(1)));
-  return snapshot.empty;
+  const items = await fetchCollection(name);
+  return items.length === 0;
 }
 
 export async function seedCollection(name, items) {
-  const batch = writeBatch(db);
+  const createdItems = [];
 
-  items.forEach((item) => {
-    const refDoc = doc(collection(db, name));
-    batch.set(refDoc, {
-      ...item,
-      createdAt: serverTimestamp(),
-    });
-  });
+  for (const item of items) {
+    const createdItem = await createDocument(name, item);
+    createdItems.push(createdItem);
+  }
 
-  await batch.commit();
+  return createdItems;
 }
 
-export async function uploadFile(path, file) {
-  const storageRef = ref(storage, path);
-  const snapshot = await uploadBytes(storageRef, file);
-  return getDownloadURL(snapshot.ref);
+export async function uploadFile() {
+  throw new Error(
+    "Прямая загрузка файлов ещё не перенесена. Для Yandex Cloud сюда нужно подключить Object Storage."
+  );
 }

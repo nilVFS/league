@@ -11,6 +11,7 @@ function useCollectionData(collectionName) {
       collectionName,
       (data) => {
         setItems(data);
+        setError("");
         setLoading(false);
       },
       (err) => {

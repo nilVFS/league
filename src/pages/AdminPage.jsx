@@ -1,12 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  signOut,
-} from "firebase/auth";
 import PageIntroCard from "../components/PageIntroCard";
 import { seedAwards, seedClips, seedParticipants } from "../data/seedContent";
 import useCollectionData from "../hooks/useCollectionData";
+import { getAdminSession, loginAdmin, logoutAdmin } from "../lib/admin";
 import {
   collectionNames,
   createDocument,
@@ -15,7 +11,6 @@ import {
   seedCollection,
   updateDocument,
 } from "../lib/content";
-import { auth } from "../lib/firebase";
 import {
   extractTwitchClipSlug,
   fetchTwitchChannelProfile,
@@ -81,12 +76,28 @@ function AdminPage() {
   );
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (nextUser) => {
-      setUser(nextUser);
-      setAuthLoading(false);
-    });
+    let cancelled = false;
 
-    return () => unsubscribe();
+    getAdminSession()
+      .then((nextUser) => {
+        if (!cancelled) {
+          setUser(nextUser);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setUser(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setAuthLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const setMessage = (message) => {
@@ -168,7 +179,8 @@ function AdminPage() {
     setSubmitting("login");
 
     try {
-      await signInWithEmailAndPassword(auth, loginForm.email, loginForm.password);
+      const nextUser = await loginAdmin(loginForm.email, loginForm.password);
+      setUser(nextUser);
       setMessage("Вход выполнен. Панель управления готова к работе.");
     } catch (error) {
       setAuthError(error.message || "Не удалось войти.");
@@ -180,7 +192,8 @@ function AdminPage() {
   const handleLogout = async () => {
     setSubmitting("logout");
     try {
-      await signOut(auth);
+      await logoutAdmin();
+      setUser(null);
       setMessage("Вы вышли из аккаунта.");
     } finally {
       setSubmitting("");
