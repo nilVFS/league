@@ -520,6 +520,54 @@ function AdminPage() {
     }
   };
 
+  const handleDeleteLadderPlayerGroup = async (player) => {
+    if (!player) {
+      return;
+    }
+
+    setSubmitting(`delete-player-group-${player.key}`);
+    setMessage("");
+
+    try {
+      const deletions = [];
+
+      if (player.playerId) {
+        deletions.push(
+          deleteDocument(collectionNames.ladderPlayers, player.playerId)
+        );
+      }
+
+      player.claims.forEach((claim) => {
+        deletions.push(
+          deleteDocument(collectionNames.achievementClaims, claim.id)
+        );
+      });
+
+      await Promise.all(deletions);
+
+      if (editingLadderPlayerId === player.playerId) {
+        resetLadderPlayerForm();
+      }
+
+      if (
+        editingAchievementClaimId &&
+        player.claims.some((claim) => claim.id === editingAchievementClaimId)
+      ) {
+        resetAchievementClaimForm();
+      }
+
+      setMessage(
+        player.claims.length || player.playerId
+          ? `Игрок ${player.playerTag} и связанные записи удалены.`
+          : `Для игрока ${player.playerTag} не было записей для удаления.`
+      );
+    } catch (error) {
+      setMessage(error.message || "Не удалось удалить игрока и его записи.");
+    } finally {
+      setSubmitting("");
+    }
+  };
+
   const handleLadderPlayerSubmit = async (event) => {
     event.preventDefault();
     setSubmitting("ladder-player");
@@ -1572,37 +1620,32 @@ function AdminPage() {
 
                               <div className="admin-list__actions">
                                 {selectedLadderPlayer.playerId ? (
-                                  <>
-                                    <button
-                                      className="admin-button admin-button--ghost"
-                                      onClick={() => {
-                                        setEditingLadderPlayerId(selectedLadderPlayer.playerId);
-                                        setLadderPlayerForm({
-                                          playerTag: selectedLadderPlayer.playerTag,
-                                        });
-                                      }}
-                                      type="button"
-                                    >
-                                      Редактировать ник
-                                    </button>
-                                    <button
-                                      className="admin-button admin-button--ghost"
-                                      disabled={
-                                        submitting === `delete-${selectedLadderPlayer.playerId}`
-                                      }
-                                      onClick={() =>
-                                        handleDelete(
-                                          collectionNames.ladderPlayers,
-                                          selectedLadderPlayer.playerId,
-                                          "Игрок"
-                                        )
-                                      }
-                                      type="button"
-                                    >
-                                      Удалить из списка
-                                    </button>
-                                  </>
+                                  <button
+                                    className="admin-button admin-button--ghost"
+                                    onClick={() => {
+                                      setEditingLadderPlayerId(selectedLadderPlayer.playerId);
+                                      setLadderPlayerForm({
+                                        playerTag: selectedLadderPlayer.playerTag,
+                                      });
+                                    }}
+                                    type="button"
+                                  >
+                                    Редактировать ник
+                                  </button>
                                 ) : null}
+                                <button
+                                  className="admin-button admin-button--ghost"
+                                  disabled={
+                                    submitting ===
+                                    `delete-player-group-${selectedLadderPlayer.key}`
+                                  }
+                                  onClick={() =>
+                                    handleDeleteLadderPlayerGroup(selectedLadderPlayer)
+                                  }
+                                  type="button"
+                                >
+                                  Удалить игрока целиком
+                                </button>
                               </div>
                             </div>
 
