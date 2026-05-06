@@ -57,6 +57,7 @@ export async function saveAchievementClaim(command, meta = {}) {
     achievementCode: Number(command.achievementCode),
     achievementTitle: achievement.title || "",
     achievementScore: Number(achievement.score || 0),
+    achievementBonusScore: Number(achievement.bonusScore || 0),
     proofUrl: command.proofUrl,
     sourceMessageId: meta.sourceMessageId || "",
     sourceMessageText: command.commandText,

@@ -43,7 +43,9 @@ function AwardsPage() {
                   <div className="tasks-table tasks-table--awards">
                     <table>
                       <colgroup>
+                        <col className="tasks-table__col tasks-table__col--number" />
                         <col className="tasks-table__col tasks-table__col--title" />
+                        <col className="tasks-table__col tasks-table__col--score" />
                         <col className="tasks-table__col tasks-table__col--score" />
                         <col className="tasks-table__col tasks-table__col--description" />
                       </colgroup>
@@ -52,7 +54,8 @@ function AwardsPage() {
                           <th>№</th>
                           <th>Награда</th>
                           <th>Баллы</th>
-                          <th>Бонус</th>
+                          <th>Бонус первому</th>
+                          <th>Примечание</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -63,7 +66,10 @@ function AwardsPage() {
                             <td className="tasks-table__score" data-label="Баллы">
                               {item.score}
                             </td>
-                            <td data-label="Бонус">{item.description || "—"}</td>
+                            <td className="tasks-table__score" data-label="Бонус первому">
+                              {Number(item.bonusScore || 0) || "—"}
+                            </td>
+                            <td data-label="Примечание">{item.description || "—"}</td>
                           </tr>
                         ))}
                       </tbody>

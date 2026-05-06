@@ -40,6 +40,7 @@ const awardInitialState = {
   category: "",
   title: "",
   score: "",
+  bonusScore: "",
   description: "",
 };
 
@@ -364,6 +365,7 @@ function AdminPage() {
         category: awardForm.category.trim() || "Общие",
         title: awardForm.title.trim(),
         score: Number(awardForm.score),
+        bonusScore: Number(awardForm.bonusScore || 0),
         description: awardForm.description.trim(),
       };
 
@@ -429,6 +431,7 @@ function AdminPage() {
         achievementCode,
         achievementTitle: achievement.title || "",
         achievementScore: Number(achievement.score || 0),
+        achievementBonusScore: Number(achievement.bonusScore || 0),
         proofUrl,
         status: statusValue,
       };
@@ -991,6 +994,20 @@ function AdminPage() {
                       />
                     </label>
                     <label className="admin-field">
+                      <span>Бонус первому</span>
+                      <input
+                        min="0"
+                        onChange={(event) =>
+                          setAwardForm((current) => ({
+                            ...current,
+                            bonusScore: event.target.value,
+                          }))
+                        }
+                        type="number"
+                        value={awardForm.bonusScore}
+                      />
+                    </label>
+                    <label className="admin-field">
                       <span>Бонус</span>
                       <textarea
                         onChange={(event) =>
@@ -1033,7 +1050,11 @@ function AdminPage() {
                         <div>
                           <strong>{award.title}</strong>
                           <div className="admin-list__meta">
-                            #{award.code ?? "—"} • {(award.category || "Общие")} • {award.score} баллов
+                            #{award.code ?? "—"} • {(award.category || "Общие")} •{" "}
+                            {award.score} баллов
+                            {Number(award.bonusScore || 0)
+                              ? ` • +${award.bonusScore} первому`
+                              : ""}
                           </div>
                           {award.description ? (
                             <div className="admin-list__meta">{award.description}</div>
@@ -1049,6 +1070,7 @@ function AdminPage() {
                                 category: award.category || "",
                                 title: award.title || "",
                                 score: String(award.score ?? ""),
+                                bonusScore: String(award.bonusScore ?? ""),
                                 description: award.description || "",
                               });
                               setActiveTab("awards");
@@ -1183,6 +1205,9 @@ function AdminPage() {
                             <div className="admin-list__meta">
                               #{claim.achievementCode} • {claim.achievementTitle || "Без названия"} •{" "}
                               {claim.achievementScore ?? 0} баллов
+                              {Number(claim.achievementBonusScore || 0)
+                                ? ` • бонус первому ${claim.achievementBonusScore}`
+                                : ""}
                             </div>
                             <div className="admin-list__meta">
                               Статус: {claim.status || "accepted"}

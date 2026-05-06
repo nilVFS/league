@@ -60,7 +60,9 @@ function LadderModal({ player, onClose }) {
                   #{achievement.achievementCode} {achievement.achievementTitle}
                 </div>
                 <div className="ladder-modal__item-meta">
-                  {achievement.achievementScore} баллов
+                  {achievement.achievementBonusScore && achievement.isFirstCompletion
+                    ? `${achievement.achievementScore} + бонус ${achievement.achievementBonusScore} = ${achievement.totalClaimScore} баллов`
+                    : `${achievement.achievementScore} баллов`}
                 </div>
               </div>
 

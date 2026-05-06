@@ -13,20 +13,45 @@ function LadderPage() {
     const achievementByCode = new Map(
       awardsState.items.map((award) => [Number(award.code), award])
     );
+    const acceptedClaims = claimsState.items.filter(
+      (claim) => !claim.status || claim.status === "accepted"
+    );
+    const firstClaimByCode = new Map();
+
+    acceptedClaims.forEach((claim) => {
+      const code = Number(claim.achievementCode);
+      const currentFirst = firstClaimByCode.get(code);
+      const currentTime = Date.parse(
+        claim.submittedAt || claim.createdAt || claim.updatedAt || ""
+      ) || 0;
+      const firstTime = currentFirst
+        ? Date.parse(
+            currentFirst.submittedAt ||
+              currentFirst.createdAt ||
+              currentFirst.updatedAt ||
+              ""
+          ) || 0
+        : Number.POSITIVE_INFINITY;
+
+      if (!currentFirst || currentTime < firstTime) {
+        firstClaimByCode.set(code, claim);
+      }
+    });
+
     const players = new Map();
 
-    claimsState.items.forEach((claim) => {
-      if (claim.status && claim.status !== "accepted") {
-        return;
-      }
-
+    acceptedClaims.forEach((claim) => {
       const playerTag = claim.playerTag || claim.playerTagNormalized || "unknown#0000";
       const key = claim.playerTagNormalized || playerTag.toLowerCase();
       const achievement =
         achievementByCode.get(Number(claim.achievementCode)) || null;
-      const score = Number(
-        claim.achievementScore ?? achievement?.score ?? 0
+      const baseScore = Number(claim.achievementScore ?? achievement?.score ?? 0);
+      const bonusScore = Number(
+        claim.achievementBonusScore ?? achievement?.bonusScore ?? 0
       );
+      const isFirstCompletion =
+        firstClaimByCode.get(Number(claim.achievementCode))?.id === claim.id;
+      const totalClaimScore = baseScore + (isFirstCompletion ? bonusScore : 0);
       const title =
         claim.achievementTitle || achievement?.title || `Достижение #${claim.achievementCode}`;
 
@@ -43,9 +68,12 @@ function LadderPage() {
       player.achievements.push({
         ...claim,
         achievementTitle: title,
-        achievementScore: score,
+        achievementScore: baseScore,
+        achievementBonusScore: bonusScore,
+        isFirstCompletion,
+        totalClaimScore,
       });
-      player.totalScore += score;
+      player.totalScore += totalClaimScore;
     });
 
     return Array.from(players.values())
