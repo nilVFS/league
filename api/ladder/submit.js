@@ -32,7 +32,8 @@ export default async function handler(request, response) {
 
     if (!command) {
       return sendJson(response, 400, {
-        error: "Команда должна быть в формате !выполнил nick#1234 номер ссылка",
+        error:
+          "Команда должна быть в формате !выполнил nick#1234 номер или !выполнил nick#1234 номер ссылка",
       });
     }
 

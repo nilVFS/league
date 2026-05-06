@@ -15,13 +15,13 @@ export function normalizePlayerTag(value = "") {
 export function parseAchievementCommand(text = "") {
   const match = String(text)
     .trim()
-    .match(/^!выполнил\s+(\S+#\d+)\s+(\d+)\s+(https?:\/\/\S+)$/iu);
+    .match(/^!выполнил\s+(\S+#\d+)\s+(\d+)(?:\s+(https?:\/\/\S+))?$/iu);
 
   if (!match) {
     return null;
   }
 
-  const [, playerTag, achievementCodeRaw, proofUrl] = match;
+  const [, playerTag, achievementCodeRaw, proofUrl = ""] = match;
 
   return {
     playerTag: playerTag.trim(),
