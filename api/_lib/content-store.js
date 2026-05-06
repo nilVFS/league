@@ -127,12 +127,10 @@ async function getYdbSql() {
         const credentialsProvider = new ServiceAccountCredentialsProvider(keyData);
         const driver = new Driver(getYdbConnectionString(), {
           credentialsProvider,
+          "ydb.sdk.enable_discovery": false,
         });
 
-        const ready = await driver.ready(AbortSignal.timeout(10000));
-        if (!ready) {
-          throw new Error("YDB driver did not become ready in time.");
-        }
+        await driver.ready();
 
         return {
           driver,
