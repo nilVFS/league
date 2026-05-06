@@ -21,6 +21,21 @@ function getBaseUrl(request) {
   return `${protocol}://${hostHeader}`;
 }
 
+function getFrontendBaseUrl() {
+  const explicitBaseUrl = String(process.env.FRONTEND_BASE_URL || "").trim().replace(/\/+$/, "");
+
+  if (explicitBaseUrl) {
+    return explicitBaseUrl;
+  }
+
+  const [firstAllowedOrigin = ""] = String(process.env.ALLOWED_ORIGINS || "")
+    .split(",")
+    .map((value) => value.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
+
+  return firstAllowedOrigin;
+}
+
 function redirectToBot(response, params) {
   const searchParams = new URLSearchParams();
 
@@ -30,7 +45,12 @@ function redirectToBot(response, params) {
     }
   });
 
-  return response.redirect(`/bot?${searchParams.toString()}`);
+  const frontendBaseUrl = getFrontendBaseUrl();
+  const targetUrl = frontendBaseUrl
+    ? `${frontendBaseUrl}/bot?${searchParams.toString()}`
+    : `/bot?${searchParams.toString()}`;
+
+  return response.redirect(targetUrl);
 }
 
 function getTrackedChannelId(channel) {
