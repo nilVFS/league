@@ -90,13 +90,26 @@ async function writeStore(store) {
 }
 
 function parseServiceAccountKey() {
+  const rawValue = process.env.YDB_SERVICE_ACCOUNT_KEY_JSON || "";
+  let parsed = null;
+
   try {
-    return JSON.parse(process.env.YDB_SERVICE_ACCOUNT_KEY_JSON || "{}");
+    parsed = JSON.parse(rawValue || "{}");
   } catch {
     const error = new Error("YDB_SERVICE_ACCOUNT_KEY_JSON содержит невалидный JSON.");
     error.statusCode = 500;
     throw error;
   }
+
+  if (!parsed?.id || !parsed?.service_account_id || !parsed?.private_key) {
+    const error = new Error(
+      "YDB_SERVICE_ACCOUNT_KEY_JSON не содержит обязательные поля id, service_account_id, private_key."
+    );
+    error.statusCode = 500;
+    throw error;
+  }
+
+  return parsed;
 }
 
 function getYdbConnectionString() {
@@ -109,22 +122,32 @@ function getYdbConnectionString() {
 async function getYdbSql() {
   if (!driverPromise) {
     driverPromise = (async () => {
-      const credentialsProvider = new ServiceAccountCredentialsProvider(
-        parseServiceAccountKey()
-      );
-      const driver = new Driver(getYdbConnectionString(), {
-        credentialsProvider,
-      });
+      try {
+        const keyData = parseServiceAccountKey();
+        const credentialsProvider = new ServiceAccountCredentialsProvider(keyData);
+        const driver = new Driver(getYdbConnectionString(), {
+          credentialsProvider,
+        });
 
-      const ready = await driver.ready(AbortSignal.timeout(10000));
-      if (!ready) {
-        throw new Error("YDB driver did not become ready in time.");
+        const ready = await driver.ready(AbortSignal.timeout(10000));
+        if (!ready) {
+          throw new Error("YDB driver did not become ready in time.");
+        }
+
+        return {
+          driver,
+          sql: query(driver),
+        };
+      } catch (error) {
+        console.error("[content-store] ydb init failed", {
+          endpoint: process.env.YDB_ENDPOINT || "",
+          database: process.env.YDB_DATABASE || "",
+          hasServiceAccountKeyJson: Boolean(process.env.YDB_SERVICE_ACCOUNT_KEY_JSON),
+          message: error.message,
+          stack: error.stack,
+        });
+        throw error;
       }
-
-      return {
-        driver,
-        sql: query(driver),
-      };
     })();
   }
 
@@ -134,18 +157,27 @@ async function getYdbSql() {
 async function ensureYdbSchema() {
   if (!schemaPromise) {
     schemaPromise = (async () => {
-      const { sql } = await getYdbSql();
+      try {
+        const { sql } = await getYdbSql();
 
-      await sql`
-        CREATE TABLE IF NOT EXISTS ${sql.identifier(YDB_TABLE_NAME)} (
-          collection_name Utf8 NOT NULL,
-          id Utf8 NOT NULL,
-          created_at Utf8,
-          updated_at Utf8,
-          data_json Utf8,
-          PRIMARY KEY (collection_name, id)
-        );
-      `;
+        await sql`
+          CREATE TABLE IF NOT EXISTS ${sql.identifier(YDB_TABLE_NAME)} (
+            collection_name Utf8 NOT NULL,
+            id Utf8 NOT NULL,
+            created_at Utf8,
+            updated_at Utf8,
+            data_json Utf8,
+            PRIMARY KEY (collection_name, id)
+          );
+        `;
+      } catch (error) {
+        console.error("[content-store] schema ensure failed", {
+          tableName: YDB_TABLE_NAME,
+          message: error.message,
+          stack: error.stack,
+        });
+        throw error;
+      }
     })();
   }
 

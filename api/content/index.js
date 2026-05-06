@@ -48,6 +48,15 @@ export default async function handler(request, response) {
     response.setHeader("Allow", "GET, POST");
     return sendJson(response, 405, { error: "Method Not Allowed" });
   } catch (error) {
+    console.error("[api/content] request failed", {
+      method: request.method,
+      collectionName,
+      isAdmin,
+      statusCode: error.statusCode || 500,
+      message: error.message,
+      stack: error.stack,
+    });
+
     return sendJson(response, error.statusCode || 500, {
       error: error.message || "Unknown content API error.",
     });

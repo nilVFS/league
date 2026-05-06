@@ -23,6 +23,15 @@ export default async function handler(request, response) {
     response.setHeader("Allow", "PATCH, DELETE");
     return sendJson(response, 405, { error: "Method Not Allowed" });
   } catch (error) {
+    console.error("[api/content/:collection/:id] request failed", {
+      method: request.method,
+      collectionName,
+      documentId,
+      statusCode: error.statusCode || 500,
+      message: error.message,
+      stack: error.stack,
+    });
+
     return sendJson(response, error.statusCode || 500, {
       error: error.message || "Unknown content API error.",
     });
