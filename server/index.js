@@ -14,6 +14,21 @@ import twitchEventsubChatHandler from "../api/twitch/eventsub/chat.js";
 import twitchEventsubRegisterHandler from "../api/twitch/eventsub/register.js";
 import twitchLiveStatusHandler from "../api/twitch/live-status.js";
 
+function isTimerImportRequest(pathname, method, body) {
+  if (pathname !== "/" || method !== "POST" || !body || typeof body !== "object") {
+    return false;
+  }
+
+  const message = Array.isArray(body.messages) ? body.messages[0] : null;
+  const eventType = String(message?.event_metadata?.event_type || "");
+  const payload = String(message?.details?.payload || "").trim().toLowerCase();
+
+  return (
+    eventType === "yandex.cloud.events.serverless.triggers.TimerMessage" &&
+    payload === "import-clips"
+  );
+}
+
 function getAllowedOrigins() {
   return String(process.env.ALLOWED_ORIGINS || "")
     .split(",")
@@ -57,6 +72,30 @@ function createQueryObject(searchParams) {
   }
 
   return query;
+}
+
+async function readJsonBody(request) {
+  if (request.body && typeof request.body === "object") {
+    return request.body;
+  }
+
+  const chunks = [];
+
+  await new Promise((resolve, reject) => {
+    request.on("data", (chunk) => {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    });
+    request.on("end", resolve);
+    request.on("error", reject);
+  });
+
+  if (!chunks.length) {
+    request.body = {};
+    return request.body;
+  }
+
+  request.body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  return request.body;
 }
 
 function enhanceResponse(response) {
@@ -200,6 +239,23 @@ export function createApiServer() {
 
     if (requestUrl.pathname === "/healthz") {
       return response.status(200).json({ ok: true });
+    }
+
+    if (requestUrl.pathname === "/" && request.method === "POST") {
+      try {
+        const body = await readJsonBody(request);
+
+        if (isTimerImportRequest(requestUrl.pathname, request.method, body)) {
+          request.query = process.env.CRON_SECRET
+            ? { secret: String(process.env.CRON_SECRET) }
+            : {};
+          return await importClipsHandler(request, response);
+        }
+      } catch (error) {
+        return response.status(400).json({
+          error: error.message || "Invalid trigger payload.",
+        });
+      }
     }
 
     const matchedRoute = matchRoute(requestUrl.pathname);
