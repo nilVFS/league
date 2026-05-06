@@ -74,7 +74,7 @@ function getAllowedNameDistance(namePart = "") {
 export function parseAchievementCommand(text = "") {
   const match = String(text)
     .trim()
-    .match(/^!выполнил\s+(\S+#\d+)\s+(\d+)(?:\s+(https?:\/\/\S+))?$/iu);
+    .match(/^!(?:выполнил|в)\s+(\S+#\d+)\s+(\d+)(?:\s+(https?:\/\/\S+))?$/iu);
 
   if (!match) {
     return null;
