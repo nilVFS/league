@@ -3,7 +3,7 @@ import { createDocument, listCollection } from "../_lib/content-store.js";
 const TWITCH_TOKEN_URL = "https://id.twitch.tv/oauth2/token";
 const TWITCH_USERS_URL = "https://api.twitch.tv/helix/users";
 const TWITCH_CLIPS_URL = "https://api.twitch.tv/helix/clips";
-const IMPORT_LOOKBACK_HOURS = 24;
+const IMPORT_LOOKBACK_HOURS = 12;
 const MAX_CLIPS_PER_CHANNEL = 20;
 
 function extractTwitchChannelLogin(value = "") {
