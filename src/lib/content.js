@@ -4,6 +4,7 @@ export const collectionNames = {
   awards: "awards",
   suggestions: "suggestions",
   achievementClaims: "achievementClaims",
+  ladderPlayers: "ladderPlayers",
   trackedChannels: "trackedChannels",
 };
 

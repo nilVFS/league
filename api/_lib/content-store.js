@@ -11,6 +11,7 @@ export const collectionNames = {
   awards: "awards",
   suggestions: "suggestions",
   achievementClaims: "achievementClaims",
+  ladderPlayers: "ladderPlayers",
   trackedChannels: "trackedChannels",
 };
 
@@ -23,6 +24,7 @@ const defaultStore = {
   awards: [],
   suggestions: [],
   achievementClaims: [],
+  ladderPlayers: [],
   trackedChannels: [],
 };
 

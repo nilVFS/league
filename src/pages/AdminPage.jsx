@@ -51,6 +51,10 @@ const achievementClaimInitialState = {
   status: "accepted",
 };
 
+const ladderPlayerInitialState = {
+  playerTag: "",
+};
+
 const adminTabs = [
   { id: "clips", label: "Клипы" },
   { id: "participants", label: "Участники" },
@@ -75,12 +79,14 @@ function AdminPage() {
   const [clipForm, setClipForm] = useState(clipInitialState);
   const [participantForm, setParticipantForm] = useState(participantInitialState);
   const [awardForm, setAwardForm] = useState(awardInitialState);
+  const [ladderPlayerForm, setLadderPlayerForm] = useState(ladderPlayerInitialState);
   const [achievementClaimForm, setAchievementClaimForm] = useState(
     achievementClaimInitialState
   );
   const [editingClipId, setEditingClipId] = useState("");
   const [editingParticipantId, setEditingParticipantId] = useState("");
   const [editingAwardId, setEditingAwardId] = useState("");
+  const [editingLadderPlayerId, setEditingLadderPlayerId] = useState("");
   const [editingAchievementClaimId, setEditingAchievementClaimId] = useState("");
   const [status, setStatus] = useState("");
   const [submitting, setSubmitting] = useState("");
@@ -88,6 +94,7 @@ function AdminPage() {
   const clipsState = useCollectionData(collectionNames.clips);
   const participantsState = useCollectionData(collectionNames.participants);
   const awardsState = useCollectionData(collectionNames.awards);
+  const ladderPlayersState = useCollectionData(collectionNames.ladderPlayers);
   const achievementClaimsState = useCollectionData(collectionNames.achievementClaims);
   const suggestionsState = useCollectionData(collectionNames.suggestions);
 
@@ -193,6 +200,11 @@ function AdminPage() {
   const resetAwardForm = () => {
     setAwardForm(awardInitialState);
     setEditingAwardId("");
+  };
+
+  const resetLadderPlayerForm = () => {
+    setLadderPlayerForm(ladderPlayerInitialState);
+    setEditingLadderPlayerId("");
   };
 
   const resetAchievementClaimForm = () => {
@@ -398,6 +410,50 @@ function AdminPage() {
     }
   };
 
+  const handleLadderPlayerSubmit = async (event) => {
+    event.preventDefault();
+    setSubmitting("ladder-player");
+    setMessage("");
+
+    try {
+      const playerTag = ladderPlayerForm.playerTag.trim();
+
+      if (!playerTag) {
+        throw new Error("Укажи ник игрока в формате nick#1234.");
+      }
+
+      const normalizedPlayerTag = normalizePlayerTag(playerTag);
+      const duplicate = ladderPlayersState.items.find(
+        (item) =>
+          normalizePlayerTag(item.playerTag || item.tag || "") === normalizedPlayerTag &&
+          item.id !== editingLadderPlayerId
+      );
+
+      if (duplicate) {
+        throw new Error("Такой ник уже есть в белом списке ладдера.");
+      }
+
+      const payload = {
+        playerTag,
+        playerTagNormalized: normalizedPlayerTag,
+      };
+
+      if (editingLadderPlayerId) {
+        await updateDocument(collectionNames.ladderPlayers, editingLadderPlayerId, payload);
+        setMessage("Игрок обновлён.");
+      } else {
+        await createDocument(collectionNames.ladderPlayers, payload);
+        setMessage("Игрок добавлен в белый список.");
+      }
+
+      resetLadderPlayerForm();
+    } catch (error) {
+      setMessage(error.message || "Не удалось сохранить игрока.");
+    } finally {
+      setSubmitting("");
+    }
+  };
+
   const handleAchievementClaimSubmit = async (event) => {
     event.preventDefault();
     setSubmitting("achievement-claim");
@@ -415,6 +471,16 @@ function AdminPage() {
 
       if (!achievementCode) {
         throw new Error("Укажи номер достижения.");
+      }
+
+      const playerExists = ladderPlayersState.items.some(
+        (item) =>
+          normalizePlayerTag(item.playerTag || item.tag || "") ===
+          normalizePlayerTag(playerTag)
+      );
+
+      if (!playerExists) {
+        throw new Error("Такого ника нет в белом списке ладдера.");
       }
 
       const achievement = awardsState.items.find(
@@ -509,6 +575,60 @@ function AdminPage() {
           imageUrl: suggestion.imageUrl || "",
           description: suggestion.description || "",
         });
+      }
+
+      if (suggestion.type === "ladderClaim") {
+        const playerTag = suggestion.playerTag || suggestion.title || "";
+        const playerTagNormalized = normalizePlayerTag(playerTag);
+        const achievementCode = Number(suggestion.achievementCode);
+        const achievement = awardsState.items.find(
+          (item) => Number(item.code) === achievementCode
+        );
+
+        if (!achievement) {
+          throw new Error(`Достижение #${achievementCode} не найдено.`);
+        }
+
+        const existingPlayer = ladderPlayersState.items.find(
+          (item) =>
+            normalizePlayerTag(item.playerTag || item.tag || "") === playerTagNormalized
+        );
+
+        if (!existingPlayer) {
+          await createDocument(collectionNames.ladderPlayers, {
+            playerTag,
+            playerTagNormalized,
+          });
+        }
+
+        const claimPayload = {
+          id: `${playerTagNormalized}__${achievementCode}`,
+          playerTag,
+          playerTagNormalized,
+          achievementCode,
+          achievementTitle: achievement.title || "",
+          achievementScore: Number(achievement.score || 0),
+          achievementBonusScore: Number(achievement.bonusScore || 0),
+          proofUrl: suggestion.proofUrl || "",
+          sourceMessageId: suggestion.sourceMessageId || "",
+          sourceMessageText: suggestion.sourceMessageText || "",
+          chatterLogin: suggestion.chatterLogin || "",
+          chatterName: suggestion.chatterName || "",
+          broadcasterUserId: suggestion.broadcasterUserId || "",
+          broadcasterLogin: suggestion.broadcasterLogin || "",
+          submittedAt: suggestion.submittedAt || new Date().toISOString(),
+          status: "accepted",
+        };
+
+        const existingClaim = achievementClaimsState.items.find(
+          (item) => item.id === claimPayload.id
+        );
+
+        if (existingClaim) {
+          await updateDocument(collectionNames.achievementClaims, existingClaim.id, claimPayload);
+        } else {
+          await createDocument(collectionNames.achievementClaims, claimPayload);
+        }
       }
 
       await updateDocument(collectionNames.suggestions, suggestion.id, {
@@ -1102,6 +1222,95 @@ function AdminPage() {
               <div className="admin-pane">
                 <section className="admin-card">
                   <h2>
+                    {editingLadderPlayerId
+                      ? "Редактировать игрока"
+                      : "Белый список ладдера"}
+                  </h2>
+                  <form className="admin-form" onSubmit={handleLadderPlayerSubmit}>
+                    <label className="admin-field">
+                      <span>Ник игрока</span>
+                      <input
+                        onChange={(event) =>
+                          setLadderPlayerForm((current) => ({
+                            ...current,
+                            playerTag: event.target.value,
+                          }))
+                        }
+                        placeholder="nick#1234"
+                        required
+                        type="text"
+                        value={ladderPlayerForm.playerTag}
+                      />
+                    </label>
+
+                    <div className="admin-actions">
+                      <button
+                        className="admin-button"
+                        disabled={submitting === "ladder-player"}
+                        type="submit"
+                      >
+                        {submitting === "ladder-player"
+                          ? "Сохраняем..."
+                          : editingLadderPlayerId
+                            ? "Сохранить игрока"
+                            : "Добавить в список"}
+                      </button>
+                      {editingLadderPlayerId ? (
+                        <button
+                          className="admin-button admin-button--ghost"
+                          onClick={resetLadderPlayerForm}
+                          type="button"
+                        >
+                          Отмена
+                        </button>
+                      ) : null}
+                    </div>
+                  </form>
+
+                  {ladderPlayersState.items.length ? (
+                    <div className="admin-list" style={{ marginTop: 18 }}>
+                      {ladderPlayersState.items.map((player) => (
+                        <div className="admin-list__item" key={player.id}>
+                          <div>
+                            <strong>{player.playerTag || player.tag}</strong>
+                          </div>
+                          <div className="admin-list__actions">
+                            <button
+                              className="admin-button admin-button--ghost"
+                              onClick={() => {
+                                setEditingLadderPlayerId(player.id);
+                                setLadderPlayerForm({
+                                  playerTag: player.playerTag || player.tag || "",
+                                });
+                              }}
+                              type="button"
+                            >
+                              Редактировать
+                            </button>
+                            <button
+                              className="admin-button admin-button--ghost"
+                              disabled={submitting === `delete-${player.id}`}
+                              onClick={() =>
+                                handleDelete(collectionNames.ladderPlayers, player.id, "Игрок")
+                              }
+                              type="button"
+                            >
+                              Удалить
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="state-box" style={{ marginTop: 18 }}>
+                      Пока нет игроков в белом списке. Неизвестные ники из чата будут
+                      уходить на модерацию.
+                    </div>
+                  )}
+                </section>
+
+                <section className="admin-card">
+                  <h2>
                     {editingAchievementClaimId
                       ? "Редактировать выполнение"
                       : "Добавить выполнение"}
@@ -1110,6 +1319,7 @@ function AdminPage() {
                     <label className="admin-field">
                       <span>Ник игрока</span>
                       <input
+                        list="ladder-player-tags"
                         onChange={(event) =>
                           setAchievementClaimForm((current) => ({
                             ...current,
@@ -1121,6 +1331,14 @@ function AdminPage() {
                         type="text"
                         value={achievementClaimForm.playerTag}
                       />
+                      <datalist id="ladder-player-tags">
+                        {ladderPlayersState.items.map((player) => (
+                          <option
+                            key={player.id}
+                            value={player.playerTag || player.tag || ""}
+                          />
+                        ))}
+                      </datalist>
                     </label>
 
                     <label className="admin-field">
@@ -1282,8 +1500,12 @@ function AdminPage() {
                         <div className="admin-list__item" key={suggestion.id}>
                           <div>
                             <strong>
-                              {suggestion.type === "clip" ? "Клип" : "Участник"}:{" "}
-                              {suggestion.title || suggestion.name}
+                              {suggestion.type === "clip"
+                                ? "Клип"
+                                : suggestion.type === "participant"
+                                  ? "Участник"
+                                  : "Заявка в ладдер"}
+                              : {suggestion.title || suggestion.name || suggestion.playerTag}
                             </strong>
                             {suggestion.clipSlug ? (
                               <div className="admin-list__meta">
@@ -1307,12 +1529,35 @@ function AdminPage() {
                                 </a>
                               </div>
                             ) : null}
+                            {suggestion.proofUrl ? (
+                              <div className="admin-list__meta">
+                                <a
+                                  href={suggestion.proofUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  {suggestion.proofUrl}
+                                </a>
+                              </div>
+                            ) : null}
                             <div className="admin-list__meta">
-                              {suggestion.preview || suggestion.channel || suggestion.description}
+                              {suggestion.type === "ladderClaim"
+                                ? `Достижение #${suggestion.achievementCode}`
+                                : suggestion.preview ||
+                                  suggestion.channel ||
+                                  suggestion.description}
                             </div>
                             {suggestion.contact ? (
                               <div className="admin-list__meta">
                                 Контакт: {suggestion.contact}
+                              </div>
+                            ) : null}
+                            {suggestion.chatterLogin ? (
+                              <div className="admin-list__meta">
+                                Отправил: {suggestion.chatterLogin}
+                                {suggestion.broadcasterLogin
+                                  ? ` • канал ${suggestion.broadcasterLogin}`
+                                  : ""}
                               </div>
                             ) : null}
                           </div>

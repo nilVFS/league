@@ -924,6 +924,12 @@ button {
   color: var(--gold-bright);
 }
 
+.clip-card__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .clip-card__text {
   font-size: 14px;
   line-height: 1.7;
@@ -1384,13 +1390,17 @@ button {
   position: absolute;
   top: 14px;
   right: 14px;
+  display: grid;
+  place-items: center;
   width: 42px;
   height: 42px;
+  padding: 0;
   border: 1px solid rgba(200, 166, 108, 0.28);
   border-radius: 50%;
   background: rgba(15, 10, 6, 0.88);
   color: var(--gold-bright);
   font-size: 22px;
+  line-height: 1;
   cursor: pointer;
 }
 
@@ -1450,8 +1460,9 @@ button {
 }
 
 .ladder-table__rank {
-  display: inline-grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 34px;
   height: 34px;
   border: 1px solid rgba(200, 166, 108, 0.24);
@@ -1460,6 +1471,8 @@ button {
   color: var(--gold-bright);
   font-size: 13px;
   font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .ladder-table__score {

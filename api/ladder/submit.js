@@ -37,7 +37,7 @@ export default async function handler(request, response) {
       });
     }
 
-    const claim = await saveAchievementClaim(command, {
+    const result = await saveAchievementClaim(command, {
       sourceMessageId: String(payload.sourceMessageId || ""),
       chatterLogin: String(payload.chatterLogin || "manual"),
       chatterName: String(payload.chatterName || "manual"),
@@ -46,7 +46,7 @@ export default async function handler(request, response) {
       submittedAt: String(payload.submittedAt || new Date().toISOString()),
     });
 
-    return sendJson(response, 200, { ok: true, claim });
+    return sendJson(response, 200, { ok: true, ...result });
   } catch (error) {
     console.error("[ladder/submit] failed", {
       message: error.message,

@@ -44,10 +44,6 @@ function BotPage() {
     [status, channel, bot]
   );
 
-  const handleBotAuth = () => {
-    window.location.assign("/api/twitch/auth/start?kind=bot");
-  };
-
   const handleBroadcasterAuth = (event) => {
     event.preventDefault();
     const normalizedLogin = broadcasterLogin.trim().replace(/^@/, "").toLowerCase();
@@ -66,9 +62,9 @@ function BotPage() {
   return (
     <main className="inner-page">
       <PageIntroCard
-        description="Здесь живёт подключение Twitch-бота и каналов стримеров. Страница не светится в навигации, но полностью готова для онбординга."
+        description="Здесь живёт подключение каналов стримеров к уже настроенному Twitch-боту. Страница не светится в навигации и нужна только для онбординга."
         eyebrow="Bot"
-        title="Подключение Twitch-бота"
+        title="Подключение каналов"
       >
         {statusBox ? (
           <div
@@ -82,22 +78,9 @@ function BotPage() {
           <div className="state-box state-box--error">{message}</div>
         ) : null}
 
-        <div className="admin-sections admin-auth">
+        <div className="admin-auth">
           <section className="admin-card">
-            <h2>Шаг 1. Авторизовать bot-аккаунт</h2>
-            <p className="page-card__description">
-              Этот шаг делается один раз владельцем бота. Twitch попросит дать права
-              на чтение чата от bot-аккаунта.
-            </p>
-            <div className="admin-actions">
-              <button className="admin-button" onClick={handleBotAuth} type="button">
-                Авторизовать бота
-              </button>
-            </div>
-          </section>
-
-          <section className="admin-card">
-            <h2>Шаг 2. Подключить канал стримера</h2>
+            <h2>Подключить канал стримера</h2>
             <p className="page-card__description">
               Стример вводит свой Twitch login, проходит авторизацию и даёт приложению
               право подписать его канал на chat EventSub.

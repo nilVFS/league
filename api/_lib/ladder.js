@@ -32,7 +32,63 @@ export function parseAchievementCommand(text = "") {
   };
 }
 
-export async function saveAchievementClaim(command, meta = {}) {
+async function isAllowedPlayerTag(playerTagNormalized) {
+  const ladderPlayers = await listCollection(collectionNames.ladderPlayers);
+
+  return ladderPlayers.some(
+    (player) =>
+      normalizePlayerTag(player.playerTag || player.tag || "") === playerTagNormalized
+  );
+}
+
+async function queueAchievementClaimModeration(command, meta = {}) {
+  const suggestions = await listCollection(collectionNames.suggestions);
+  const existingSuggestion = suggestions.find(
+    (item) =>
+      item.type === "ladderClaim" &&
+      item.status === "pending" &&
+      normalizePlayerTag(item.playerTag || "") === command.playerTagNormalized &&
+      Number(item.achievementCode) === Number(command.achievementCode)
+  );
+
+  const payload = {
+    type: "ladderClaim",
+    title: command.playerTag,
+    playerTag: command.playerTag,
+    playerTagNormalized: command.playerTagNormalized,
+    achievementCode: Number(command.achievementCode),
+    proofUrl: command.proofUrl,
+    sourceMessageId: meta.sourceMessageId || "",
+    sourceMessageText: command.commandText,
+    chatterLogin: meta.chatterLogin || "",
+    chatterName: meta.chatterName || "",
+    broadcasterUserId: meta.broadcasterUserId || "",
+    broadcasterLogin: meta.broadcasterLogin || "",
+    submittedAt: meta.submittedAt || new Date().toISOString(),
+    description: "Игрока нет в белом списке ладдера. Нужна модерация.",
+    status: "pending",
+  };
+
+  if (existingSuggestion) {
+    return updateDocument(collectionNames.suggestions, existingSuggestion.id, payload);
+  }
+
+  return createDocument(collectionNames.suggestions, payload);
+}
+
+export async function saveAchievementClaim(command, meta = {}, options = {}) {
+  if (!options.skipWhitelistCheck) {
+    const allowedPlayer = await isAllowedPlayerTag(command.playerTagNormalized);
+
+    if (!allowedPlayer) {
+      const suggestion = await queueAchievementClaimModeration(command, meta);
+      return {
+        status: "pending_moderation",
+        suggestion,
+      };
+    }
+  }
+
   const achievements = await listCollection(collectionNames.awards);
   const achievement = achievements.find(
     (item) => Number(item.code) === Number(command.achievementCode)
@@ -70,8 +126,16 @@ export async function saveAchievementClaim(command, meta = {}) {
   };
 
   if (existingClaim) {
-    return updateDocument(collectionNames.achievementClaims, claimId, payload);
+    const claim = await updateDocument(collectionNames.achievementClaims, claimId, payload);
+    return {
+      status: "accepted",
+      claim,
+    };
   }
 
-  return createDocument(collectionNames.achievementClaims, payload);
+  const claim = await createDocument(collectionNames.achievementClaims, payload);
+  return {
+    status: "accepted",
+    claim,
+  };
 }
