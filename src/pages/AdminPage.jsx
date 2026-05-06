@@ -43,12 +43,27 @@ const awardInitialState = {
   description: "",
 };
 
+const achievementClaimInitialState = {
+  playerTag: "",
+  achievementCode: "",
+  proofUrl: "",
+  status: "accepted",
+};
+
 const adminTabs = [
   { id: "clips", label: "Клипы" },
   { id: "participants", label: "Участники" },
   { id: "awards", label: "Награды" },
+  { id: "ladder", label: "Ладдер" },
   { id: "requests", label: "Запросы" },
 ];
+
+function normalizePlayerTag(value = "") {
+  return String(value)
+    .trim()
+    .replace(/\s+/g, "")
+    .toLowerCase();
+}
 
 function AdminPage() {
   const [user, setUser] = useState(null);
@@ -59,15 +74,20 @@ function AdminPage() {
   const [clipForm, setClipForm] = useState(clipInitialState);
   const [participantForm, setParticipantForm] = useState(participantInitialState);
   const [awardForm, setAwardForm] = useState(awardInitialState);
+  const [achievementClaimForm, setAchievementClaimForm] = useState(
+    achievementClaimInitialState
+  );
   const [editingClipId, setEditingClipId] = useState("");
   const [editingParticipantId, setEditingParticipantId] = useState("");
   const [editingAwardId, setEditingAwardId] = useState("");
+  const [editingAchievementClaimId, setEditingAchievementClaimId] = useState("");
   const [status, setStatus] = useState("");
   const [submitting, setSubmitting] = useState("");
 
   const clipsState = useCollectionData(collectionNames.clips);
   const participantsState = useCollectionData(collectionNames.participants);
   const awardsState = useCollectionData(collectionNames.awards);
+  const achievementClaimsState = useCollectionData(collectionNames.achievementClaims);
   const suggestionsState = useCollectionData(collectionNames.suggestions);
 
   const pendingSuggestions = useMemo(
@@ -172,6 +192,11 @@ function AdminPage() {
   const resetAwardForm = () => {
     setAwardForm(awardInitialState);
     setEditingAwardId("");
+  };
+
+  const resetAchievementClaimForm = () => {
+    setAchievementClaimForm(achievementClaimInitialState);
+    setEditingAchievementClaimId("");
   };
 
   const handleLogin = async (event) => {
@@ -366,6 +391,71 @@ function AdminPage() {
       setMessage(`${label} удалён.`);
     } catch (error) {
       setMessage(error.message || "Не удалось удалить запись.");
+    } finally {
+      setSubmitting("");
+    }
+  };
+
+  const handleAchievementClaimSubmit = async (event) => {
+    event.preventDefault();
+    setSubmitting("achievement-claim");
+    setMessage("");
+
+    try {
+      const playerTag = achievementClaimForm.playerTag.trim();
+      const achievementCode = Number(achievementClaimForm.achievementCode);
+      const proofUrl = achievementClaimForm.proofUrl.trim();
+      const statusValue = achievementClaimForm.status.trim() || "accepted";
+
+      if (!playerTag) {
+        throw new Error("Укажи ник игрока в формате nick#1234.");
+      }
+
+      if (!achievementCode) {
+        throw new Error("Укажи номер достижения.");
+      }
+
+      const achievement = awardsState.items.find(
+        (item) => Number(item.code) === achievementCode
+      );
+
+      if (!achievement) {
+        throw new Error(`Достижение #${achievementCode} не найдено.`);
+      }
+
+      const payload = {
+        playerTag,
+        playerTagNormalized: normalizePlayerTag(playerTag),
+        achievementCode,
+        achievementTitle: achievement.title || "",
+        achievementScore: Number(achievement.score || 0),
+        proofUrl,
+        status: statusValue,
+      };
+
+      if (editingAchievementClaimId) {
+        await updateDocument(
+          collectionNames.achievementClaims,
+          editingAchievementClaimId,
+          payload
+        );
+        setMessage("Выполнение обновлено.");
+      } else {
+        await createDocument(collectionNames.achievementClaims, {
+          ...payload,
+          sourceMessageId: "",
+          sourceMessageText: "",
+          chatterLogin: "admin",
+          chatterName: "admin",
+          broadcasterLogin: "",
+          submittedAt: new Date().toISOString(),
+        });
+        setMessage("Выполнение добавлено.");
+      }
+
+      resetAchievementClaimForm();
+    } catch (error) {
+      setMessage(error.message || "Не удалось сохранить выполнение.");
     } finally {
       setSubmitting("");
     }
@@ -981,6 +1071,174 @@ function AdminPage() {
                       </div>
                     ))}
                   </div>
+                </section>
+              </div>
+            ) : null}
+
+            {activeTab === "ladder" ? (
+              <div className="admin-pane">
+                <section className="admin-card">
+                  <h2>
+                    {editingAchievementClaimId
+                      ? "Редактировать выполнение"
+                      : "Добавить выполнение"}
+                  </h2>
+                  <form className="admin-form" onSubmit={handleAchievementClaimSubmit}>
+                    <label className="admin-field">
+                      <span>Ник игрока</span>
+                      <input
+                        onChange={(event) =>
+                          setAchievementClaimForm((current) => ({
+                            ...current,
+                            playerTag: event.target.value,
+                          }))
+                        }
+                        placeholder="nick#1234"
+                        required
+                        type="text"
+                        value={achievementClaimForm.playerTag}
+                      />
+                    </label>
+
+                    <label className="admin-field">
+                      <span>Номер достижения</span>
+                      <input
+                        min="1"
+                        onChange={(event) =>
+                          setAchievementClaimForm((current) => ({
+                            ...current,
+                            achievementCode: event.target.value,
+                          }))
+                        }
+                        required
+                        type="number"
+                        value={achievementClaimForm.achievementCode}
+                      />
+                    </label>
+
+                    <label className="admin-field">
+                      <span>Ссылка на подтверждение</span>
+                      <input
+                        onChange={(event) =>
+                          setAchievementClaimForm((current) => ({
+                            ...current,
+                            proofUrl: event.target.value,
+                          }))
+                        }
+                        placeholder="https://..."
+                        type="url"
+                        value={achievementClaimForm.proofUrl}
+                      />
+                    </label>
+
+                    <label className="admin-field">
+                      <span>Статус</span>
+                      <select
+                        onChange={(event) =>
+                          setAchievementClaimForm((current) => ({
+                            ...current,
+                            status: event.target.value,
+                          }))
+                        }
+                        value={achievementClaimForm.status}
+                      >
+                        <option value="accepted">accepted</option>
+                        <option value="rejected">rejected</option>
+                      </select>
+                    </label>
+
+                    <div className="admin-actions">
+                      <button
+                        className="admin-button"
+                        disabled={submitting === "achievement-claim"}
+                        type="submit"
+                      >
+                        {submitting === "achievement-claim"
+                          ? "Сохраняем..."
+                          : editingAchievementClaimId
+                            ? "Сохранить выполнение"
+                            : "Добавить выполнение"}
+                      </button>
+                      {editingAchievementClaimId ? (
+                        <button
+                          className="admin-button admin-button--ghost"
+                          onClick={resetAchievementClaimForm}
+                          type="button"
+                        >
+                          Отмена
+                        </button>
+                      ) : null}
+                    </div>
+                  </form>
+                </section>
+
+                <section className="admin-card">
+                  <h2>Список выполнений</h2>
+                  {achievementClaimsState.items.length ? (
+                    <div className="admin-list">
+                      {achievementClaimsState.items.map((claim) => (
+                        <div className="admin-list__item" key={claim.id}>
+                          <div>
+                            <strong>{claim.playerTag || claim.playerTagNormalized}</strong>
+                            <div className="admin-list__meta">
+                              #{claim.achievementCode} • {claim.achievementTitle || "Без названия"} •{" "}
+                              {claim.achievementScore ?? 0} баллов
+                            </div>
+                            <div className="admin-list__meta">
+                              Статус: {claim.status || "accepted"}
+                              {claim.chatterLogin ? ` • отправил ${claim.chatterLogin}` : ""}
+                            </div>
+                            {claim.proofUrl ? (
+                              <div className="admin-list__meta">
+                                <a
+                                  href={claim.proofUrl}
+                                  rel="noreferrer noopener"
+                                  target="_blank"
+                                >
+                                  {claim.proofUrl}
+                                </a>
+                              </div>
+                            ) : null}
+                          </div>
+
+                          <div className="admin-list__actions">
+                            <button
+                              className="admin-button admin-button--ghost"
+                              onClick={() => {
+                                setEditingAchievementClaimId(claim.id);
+                                setAchievementClaimForm({
+                                  playerTag: claim.playerTag || "",
+                                  achievementCode: String(claim.achievementCode ?? ""),
+                                  proofUrl: claim.proofUrl || "",
+                                  status: claim.status || "accepted",
+                                });
+                                setActiveTab("ladder");
+                              }}
+                              type="button"
+                            >
+                              Редактировать
+                            </button>
+                            <button
+                              className="admin-button admin-button--ghost"
+                              disabled={submitting === `delete-${claim.id}`}
+                              onClick={() =>
+                                handleDelete(
+                                  collectionNames.achievementClaims,
+                                  claim.id,
+                                  "Выполнение"
+                                )
+                              }
+                              type="button"
+                            >
+                              Удалить
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="state-box">Пока нет выполнений в ладдере.</div>
+                  )}
                 </section>
               </div>
             ) : null}
