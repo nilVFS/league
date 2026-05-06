@@ -45,7 +45,9 @@ function ClipModal({ clip, onClose }) {
           onClick={onClose}
           type="button"
         >
-          ×
+          <span className="modal__close-icon" aria-hidden="true">
+            ×
+          </span>
         </button>
         {embedUrl ? (
           <iframe

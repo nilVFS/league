@@ -1404,6 +1404,12 @@ button {
   cursor: pointer;
 }
 
+.modal__close-icon {
+  display: block;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
 .modal__dialog--ladder {
   width: min(860px, 100%);
 }

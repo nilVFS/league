@@ -42,7 +42,9 @@ function LadderModal({ player, onClose }) {
           onClick={onClose}
           type="button"
         >
-          ×
+          <span className="modal__close-icon" aria-hidden="true">
+            ×
+          </span>
         </button>
 
         <div className="modal__meta modal__meta--ladder">

@@ -198,7 +198,9 @@ function SuggestionForm({ type }) {
               onClick={() => setOpen(false)}
               type="button"
             >
-              ×
+              <span className="modal__close-icon" aria-hidden="true">
+                ×
+              </span>
             </button>
 
             <div className="suggestion-modal__header">
