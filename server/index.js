@@ -246,6 +246,7 @@ export function createApiServer() {
         const body = await readJsonBody(request);
 
         if (isTimerImportRequest(requestUrl.pathname, request.method, body)) {
+          request.method = "GET";
           request.query = process.env.CRON_SECRET
             ? { secret: String(process.env.CRON_SECRET) }
             : {};
