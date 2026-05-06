@@ -54,6 +54,9 @@ function LadderPage() {
       const totalClaimScore = baseScore + (isFirstCompletion ? bonusScore : 0);
       const title =
         claim.achievementTitle || achievement?.title || `Достижение #${claim.achievementCode}`;
+      const broadcasterLabel = claim.broadcasterLogin
+        ? `twitch.tv/${claim.broadcasterLogin}`
+        : "";
 
       if (!players.has(key)) {
         players.set(key, {
@@ -72,6 +75,7 @@ function LadderPage() {
         achievementBonusScore: bonusScore,
         isFirstCompletion,
         totalClaimScore,
+        broadcasterLabel,
       });
       player.totalScore += totalClaimScore;
     });

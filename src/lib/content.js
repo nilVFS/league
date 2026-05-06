@@ -4,6 +4,7 @@ export const collectionNames = {
   awards: "awards",
   suggestions: "suggestions",
   achievementClaims: "achievementClaims",
+  trackedChannels: "trackedChannels",
 };
 
 const POLL_INTERVAL_MS = 15000;

@@ -3,7 +3,7 @@ import { createDocument, listCollection } from "../_lib/content-store.js";
 import { getQueryParam, readJsonBody, sendJson } from "../_lib/http.js";
 
 function canReadCollection(name, isAdmin) {
-  return name !== "suggestions" || isAdmin;
+  return !["suggestions", "trackedChannels"].includes(name) || isAdmin;
 }
 
 function canCreateCollection(name, isAdmin) {

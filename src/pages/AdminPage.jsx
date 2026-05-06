@@ -450,6 +450,7 @@ function AdminPage() {
           sourceMessageText: "",
           chatterLogin: "admin",
           chatterName: "admin",
+          broadcasterUserId: "",
           broadcasterLogin: "",
           submittedAt: new Date().toISOString(),
         });
@@ -1212,6 +1213,9 @@ function AdminPage() {
                             <div className="admin-list__meta">
                               Статус: {claim.status || "accepted"}
                               {claim.chatterLogin ? ` • отправил ${claim.chatterLogin}` : ""}
+                              {claim.broadcasterLogin
+                                ? ` • канал ${claim.broadcasterLogin}`
+                                : ""}
                             </div>
                             {claim.proofUrl ? (
                               <div className="admin-list__meta">

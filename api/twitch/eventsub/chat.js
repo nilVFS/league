@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { collectionNames, listCollection } from "../../_lib/content-store.js";
 import { parseAchievementCommand, saveAchievementClaim } from "../../_lib/ladder.js";
 
 const MESSAGE_ID_HEADER = "twitch-eventsub-message-id";
@@ -89,6 +90,20 @@ export default async function handler(request, response) {
       return response.status(200).json({ ok: true, ignored: true });
     }
 
+    const broadcasterUserId = String(payload?.event?.broadcaster_user_id || "");
+    const broadcasterLogin = String(payload?.event?.broadcaster_user_login || "");
+    const trackedChannels = await listCollection(collectionNames.trackedChannels);
+    const trackedChannel = trackedChannels.find(
+      (channel) =>
+        String(channel.broadcasterUserId || "") === broadcasterUserId ||
+        String(channel.broadcasterLogin || "").toLowerCase() ===
+          broadcasterLogin.toLowerCase()
+    );
+
+    if (!trackedChannel || trackedChannel.enabled === false) {
+      return response.status(200).json({ ok: true, ignored: true, reason: "channel_not_tracked" });
+    }
+
     const text = payload?.event?.message?.text || "";
     const command = parseAchievementCommand(text);
 
@@ -100,7 +115,8 @@ export default async function handler(request, response) {
       sourceMessageId: payload?.event?.message_id || "",
       chatterLogin: payload?.event?.chatter_user_login || "",
       chatterName: payload?.event?.chatter_user_name || "",
-      broadcasterLogin: payload?.event?.broadcaster_user_login || "",
+      broadcasterUserId,
+      broadcasterLogin,
       submittedAt: payload?.event?.message?.sent_at || payload?.event?.created_at || "",
     });
 

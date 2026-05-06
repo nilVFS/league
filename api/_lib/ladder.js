@@ -63,6 +63,7 @@ export async function saveAchievementClaim(command, meta = {}) {
     sourceMessageText: command.commandText,
     chatterLogin: meta.chatterLogin || "",
     chatterName: meta.chatterName || "",
+    broadcasterUserId: meta.broadcasterUserId || "",
     broadcasterLogin: meta.broadcasterLogin || "",
     submittedAt: meta.submittedAt || new Date().toISOString(),
     status: "accepted",

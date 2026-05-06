@@ -64,6 +64,11 @@ function LadderModal({ player, onClose }) {
                     ? `${achievement.achievementScore} + бонус ${achievement.achievementBonusScore} = ${achievement.totalClaimScore} баллов`
                     : `${achievement.achievementScore} баллов`}
                 </div>
+                {achievement.broadcasterLabel ? (
+                  <div className="ladder-modal__item-meta">
+                    Канал: {achievement.broadcasterLabel}
+                  </div>
+                ) : null}
               </div>
 
               {achievement.proofUrl ? (

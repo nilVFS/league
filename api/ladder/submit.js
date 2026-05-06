@@ -40,6 +40,7 @@ export default async function handler(request, response) {
       sourceMessageId: String(payload.sourceMessageId || ""),
       chatterLogin: String(payload.chatterLogin || "manual"),
       chatterName: String(payload.chatterName || "manual"),
+      broadcasterUserId: String(payload.broadcasterUserId || ""),
       broadcasterLogin: String(payload.broadcasterLogin || ""),
       submittedAt: String(payload.submittedAt || new Date().toISOString()),
     });
