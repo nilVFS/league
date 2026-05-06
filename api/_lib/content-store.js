@@ -80,6 +80,31 @@ function getDocumentIdCandidates(id) {
   return Array.from(candidates);
 }
 
+function parseAchievementClaimIdentity(id) {
+  const value = String(id || "").trim();
+  const match = value.match(/^(.*?)(?:__|_)(\d+)$/);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    playerTagNormalized: match[1],
+    achievementCode: Number(match[2]),
+  };
+}
+
+function matchesAchievementClaimIdentity(item, identity) {
+  if (!identity) {
+    return false;
+  }
+
+  return (
+    String(item.playerTagNormalized || "") === identity.playerTagNormalized &&
+    Number(item.achievementCode || 0) === identity.achievementCode
+  );
+}
+
 async function ensureStoreFile() {
   const storePath = getStorePath();
   await mkdir(path.dirname(storePath), { recursive: true });
@@ -228,14 +253,23 @@ async function listCollectionFromYdb(name) {
 async function getDocumentFromYdb(name, id) {
   const items = await listCollectionFromYdb(name);
   const candidates = getDocumentIdCandidates(id);
-
-  return (
+  const directMatch =
     items.find(
       (item) =>
         candidates.includes(String(item.id || "")) ||
         candidates.includes(String(item._storageId || ""))
-    ) || null
-  );
+    ) || null;
+
+  if (directMatch) {
+    return directMatch;
+  }
+
+  if (name === collectionNames.achievementClaims) {
+    const identity = parseAchievementClaimIdentity(id);
+    return items.find((item) => matchesAchievementClaimIdentity(item, identity)) || null;
+  }
+
+  return null;
 }
 
 async function upsertDocumentToYdb(name, document) {
@@ -298,11 +332,16 @@ async function updateDocumentInFile(name, id, payload) {
   const store = await readStore();
   const items = store[name] || [];
   const candidates = getDocumentIdCandidates(id);
-  const index = items.findIndex(
+  let index = items.findIndex(
     (item) =>
       candidates.includes(String(item.id || "")) ||
       candidates.includes(String(item._storageId || ""))
   );
+
+  if (index < 0 && name === collectionNames.achievementClaims) {
+    const identity = parseAchievementClaimIdentity(id);
+    index = items.findIndex((item) => matchesAchievementClaimIdentity(item, identity));
+  }
 
   if (index < 0) {
     const error = new Error("Документ не найден.");
@@ -331,11 +370,16 @@ async function deleteDocumentFromFile(name, id) {
   const store = await readStore();
   const items = store[name] || [];
   const candidates = getDocumentIdCandidates(id);
-  const nextItems = items.filter(
+  let nextItems = items.filter(
     (item) =>
       !candidates.includes(String(item.id || "")) &&
       !candidates.includes(String(item._storageId || ""))
   );
+
+  if (nextItems.length === items.length && name === collectionNames.achievementClaims) {
+    const identity = parseAchievementClaimIdentity(id);
+    nextItems = items.filter((item) => !matchesAchievementClaimIdentity(item, identity));
+  }
 
   if (nextItems.length === items.length) {
     const error = new Error("Документ не найден.");

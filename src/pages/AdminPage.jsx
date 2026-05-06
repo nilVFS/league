@@ -156,10 +156,12 @@ function AdminPage() {
           key,
           playerTag,
           playerId: getDocumentStorageId(player),
+          hasWhitelistEntry: true,
           claims: [],
         });
       } else if (!groups.get(key).playerId) {
         groups.get(key).playerId = getDocumentStorageId(player);
+        groups.get(key).hasWhitelistEntry = true;
       }
     });
 
@@ -170,6 +172,7 @@ function AdminPage() {
           key,
           playerTag: group.playerTag,
           playerId: "",
+          hasWhitelistEntry: false,
           claims: group.items,
         });
       } else {
@@ -637,14 +640,17 @@ function AdminPage() {
         throw new Error("Укажи номер достижения.");
       }
 
+      const normalizedPlayerTag = normalizePlayerTag(playerTag);
       const playerExists = ladderPlayersState.items.some(
         (item) =>
-          normalizePlayerTag(item.playerTag || item.tag || "") ===
-          normalizePlayerTag(playerTag)
+          normalizePlayerTag(item.playerTag || item.tag || "") === normalizedPlayerTag
       );
 
       if (!playerExists) {
-        throw new Error("Такого ника нет в белом списке ладдера.");
+        await createDocument(collectionNames.ladderPlayers, {
+          playerTag,
+          playerTagNormalized: normalizedPlayerTag,
+        });
       }
 
       const achievement = awardsState.items.find(
@@ -657,7 +663,7 @@ function AdminPage() {
 
       const payload = {
         playerTag,
-        playerTagNormalized: normalizePlayerTag(playerTag),
+        playerTagNormalized: normalizedPlayerTag,
         achievementCode,
         achievementTitle: achievement.title || "",
         achievementScore: Number(achievement.score || 0),
@@ -1593,13 +1599,16 @@ function AdminPage() {
                                 >
                                   <div className="admin-directory__item-main">
                                     <strong>{player.playerTag}</strong>
-                                    <div className="admin-list__meta">
-                                      {player.claims.length
-                                        ? `${player.claims.length} выполнений`
-                                        : "Пока без выполнений"}
-                                    </div>
+                                  <div className="admin-list__meta">
+                                    {player.claims.length
+                                      ? `${player.claims.length} выполнений`
+                                      : "Пока без выполнений"}
+                                    {!player.hasWhitelistEntry
+                                      ? " • только в выполнениях"
+                                      : ""}
                                   </div>
-                                  <span className="admin-tab__badge">
+                                </div>
+                                <span className="admin-tab__badge">
                                     {player.claims.length}
                                   </span>
                                 </button>
@@ -1625,6 +1634,9 @@ function AdminPage() {
                                   {selectedLadderPlayer.claims.length
                                     ? `${selectedLadderPlayer.claims.length} достижений`
                                     : "Пока нет выполнений"}
+                                  {!selectedLadderPlayer.hasWhitelistEntry
+                                    ? " • ещё не в белом списке"
+                                    : ""}
                                 </div>
                               </div>
 
