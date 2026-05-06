@@ -1374,6 +1374,36 @@ button {
   margin-top: 24px;
 }
 
+.admin-list--compact {
+  margin-top: 0;
+}
+
+.admin-groups {
+  display: grid;
+  gap: 18px;
+}
+
+.admin-group {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(200, 166, 108, 0.12);
+  border-radius: 18px;
+  background: rgba(14, 9, 5, 0.38);
+}
+
+.admin-group__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-group__header strong {
+  font-size: 16px;
+  color: var(--gold-bright);
+}
+
 .admin-list__item {
   display: flex;
   align-items: flex-start;
