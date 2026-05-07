@@ -32,6 +32,7 @@ function ClipsPage() {
   const { items: clips, loading, error } = useCollectionData(collectionNames.clips);
   const [selectedClip, setSelectedClip] = useState(null);
   const [resolvedThumbnails, setResolvedThumbnails] = useState({});
+  const [search, setSearch] = useState("");
   const sortedClips = useMemo(() => {
     return [...clips].sort((left, right) => {
       const leftCreatedAtMs = getClipTimestampMs(left.importedAt || left.createdAt);
@@ -47,6 +48,19 @@ function ClipsPage() {
       return 0;
     });
   }, [clips]);
+
+  const filteredClips = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) {
+      return sortedClips;
+    }
+
+    return sortedClips.filter((clip) =>
+      [clip.title, clip.broadcasterName, clip.description, clip.clipSlug]
+        .map((value) => String(value || "").toLowerCase())
+        .some((value) => value.includes(query))
+    );
+  }, [search, sortedClips]);
 
   useEffect(() => {
     const clipsWithoutThumbnail = clips.filter(
@@ -96,7 +110,24 @@ function ClipsPage() {
         description="Здесь собраны клипы участников. Вы можете предлагать свои клипы."
         eyebrow="Клипы"
         title="Подборка лучших клипов"
-        titleAction={<SuggestionForm type="clip" />}
+        titleAction={
+          <div className="page-card__action-group">
+            <label className="page-search page-search--inline" htmlFor="clips-search">
+              <span className="sr-only">Поиск по клипам</span>
+              <span aria-hidden="true" className="page-search__icon">
+                ⌕
+              </span>
+              <input
+                id="clips-search"
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Поиск по клипам"
+                type="search"
+                value={search}
+              />
+            </label>
+            <SuggestionForm type="clip" />
+          </div>
+        }
       >
         {loading ? <div className="state-box">Загружаем клипы...</div> : null}
         {error ? <div className="state-box state-box--error">{error}</div> : null}
@@ -104,7 +135,7 @@ function ClipsPage() {
         {!loading && !error ? (
           clips.length ? (
             <div className="clips-grid">
-              {sortedClips.map((clip) => {
+              {filteredClips.map((clip) => {
                 const createdAtMs = getClipTimestampMs(clip.importedAt || clip.createdAt);
                 const isNew =
                   createdAtMs &&
@@ -145,6 +176,10 @@ function ClipsPage() {
           ) : (
             <div className="state-box">Пока нет клипов. Добавь их через `/admin`.</div>
           )
+        ) : null}
+
+        {!loading && !error && clips.length && !filteredClips.length ? (
+          <div className="state-box">По этому запросу клипы не нашлись.</div>
         ) : null}
       </PageIntroCard>
 

@@ -34,9 +34,9 @@ function AwardsPage() {
       <PageIntroCard
         title="Цели и баллы"
         titleAction={
-          <label className="awards-search awards-search--inline" htmlFor="awards-search">
+          <label className="page-search page-search--inline" htmlFor="awards-search">
             <span className="sr-only">Поиск по целям</span>
-            <span aria-hidden="true" className="awards-search__icon">
+            <span aria-hidden="true" className="page-search__icon">
               ⌕
             </span>
             <input

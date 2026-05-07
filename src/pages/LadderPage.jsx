@@ -8,6 +8,7 @@ function LadderPage() {
   const awardsState = useCollectionData(collectionNames.awards);
   const claimsState = useCollectionData(collectionNames.achievementClaims);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const [search, setSearch] = useState("");
 
   const ladderRows = useMemo(() => {
     const achievementByCode = new Map(
@@ -103,6 +104,16 @@ function LadderPage() {
 
   const loading = awardsState.loading || claimsState.loading;
   const error = awardsState.error || claimsState.error;
+  const filteredLadderRows = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) {
+      return ladderRows;
+    }
+
+    return ladderRows.filter((player) =>
+      String(player.playerTag || "").toLowerCase().includes(query)
+    );
+  }, [ladderRows, search]);
 
   return (
     <main className="inner-page">
@@ -110,6 +121,21 @@ function LadderPage() {
         description="Лидерборд собирается из подтверждённых выполнений достижений. Нажми на строку игрока, чтобы увидеть полный список и ссылки на подтверждение."
         eyebrow="Ладдер"
         title="Таблица лидеров"
+        titleAction={
+          <label className="page-search page-search--inline" htmlFor="ladder-search">
+            <span className="sr-only">Поиск по игрокам</span>
+            <span aria-hidden="true" className="page-search__icon">
+              ⌕
+            </span>
+            <input
+              id="ladder-search"
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Поиск по игрокам"
+              type="search"
+              value={search}
+            />
+          </label>
+        }
       >
         {loading ? <div className="state-box">Загружаем ладдер...</div> : null}
         {error ? <div className="state-box state-box--error">{error}</div> : null}
@@ -126,7 +152,7 @@ function LadderPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {ladderRows.map((player, index) => (
+                  {filteredLadderRows.map((player, index) => (
                     <tr
                       className="ladder-table__row"
                       key={player.key}
@@ -153,6 +179,10 @@ function LadderPage() {
               `!выполнил` или `!в`, здесь появятся игроки.
             </div>
           )
+        ) : null}
+
+        {!loading && !error && ladderRows.length && !filteredLadderRows.length ? (
+          <div className="state-box">По этому запросу игроки не нашлись.</div>
         ) : null}
       </PageIntroCard>
 

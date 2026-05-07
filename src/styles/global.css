@@ -245,6 +245,14 @@ button {
   flex-shrink: 0;
 }
 
+.page-card__action-group {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .page-card__description {
   max-width: 720px;
   margin: 0;
@@ -729,27 +737,6 @@ button {
   margin-top: 34px;
 }
 
-.clips-search {
-  margin-top: 24px;
-  margin-bottom: 16px;
-}
-
-.clips-search__input {
-  width: 100%;
-  padding: 12px 16px;
-  border-radius: 12px;
-  border: 1px solid var(--line-warm);
-  background: rgba(28, 19, 11, 0.74);
-  color: var(--text-primary);
-  font-size: 15px;
-  outline: none;
-  transition: border-color 0.2s ease;
-}
-
-.clips-search__input:focus {
-  border-color: var(--accent-gold);
-}
-
 .clips-day-group {
   margin-bottom: 32px;
 }
@@ -971,7 +958,7 @@ button {
   overflow-x: auto;
 }
 
-.awards-search {
+.page-search {
   width: min(360px, 100%);
   display: flex;
   align-items: center;
@@ -983,17 +970,17 @@ button {
   background: rgba(24, 16, 9, 0.82);
 }
 
-.awards-search--inline {
+.page-search--inline {
   width: min(320px, 100%);
 }
 
-.awards-search__icon {
+.page-search__icon {
   flex-shrink: 0;
   color: rgba(216, 191, 142, 0.58);
   font-size: 16px;
 }
 
-.awards-search input {
+.page-search input {
   width: 100%;
   min-width: 0;
   padding: 0;
@@ -1002,11 +989,11 @@ button {
   color: var(--text-main);
 }
 
-.awards-search input:focus {
+.page-search input:focus {
   outline: none;
 }
 
-.awards-search input::placeholder {
+.page-search input::placeholder {
   color: rgba(222, 203, 168, 0.42);
 }
 
@@ -1892,6 +1879,15 @@ button {
   .tasks-table th:last-child,
   .tasks-table td:last-child {
     width: 110px;
+  }
+
+  .page-card__action-group {
+    width: 100%;
+  }
+
+  .page-search,
+  .page-search--inline {
+    width: 100%;
   }
 
   .tasks-table th + th,

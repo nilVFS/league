@@ -1,8 +1,8 @@
 export const navItems = [
   { label: "Главная", to: "/" },
-  { label: "Клипы", to: "/clips" },
-  { label: "Участники", to: "/participants" },
   { label: "Ладдер", to: "/ladder" },
+  { label: "Клипы", to: "/clips" },
+  { label: "Стримеры", to: "/participants" },
   { label: "Награды", to: "/awards" },
 ];
 
