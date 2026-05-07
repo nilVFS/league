@@ -1,4 +1,4 @@
-# LG React Site
+# HotV React Site
 
 Сайт и служебка для приватной лиги Path of Exile 2.
 
