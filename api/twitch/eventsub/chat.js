@@ -3,6 +3,7 @@ import {
   collectionNames,
   createDocument,
   listCollection,
+  updateDocument,
 } from "../../_lib/content-store.js";
 import { parseAchievementCommand, saveAchievementClaim } from "../../_lib/ladder.js";
 import { sendTwitchChatMessage } from "../../_lib/twitch-eventsub.js";
@@ -115,25 +116,51 @@ async function sendChatAcknowledgement({
   broadcasterUserId,
   chatterLogin,
   sourceMessageId,
+  trackedChannelId,
   text,
 }) {
   if (!broadcasterUserId || !chatterLogin || !text) {
     return;
   }
 
+  const message = `@${chatterLogin} ${text}`;
+
   try {
     await sendTwitchChatMessage({
       broadcasterUserId,
-      message: `@${chatterLogin} ${text}`,
+      message,
       replyParentMessageId: sourceMessageId,
     });
   } catch (error) {
-    console.warn("[eventsub/chat] failed to send acknowledgement", {
+    console.warn("[eventsub/chat] failed to send reply acknowledgement", {
       broadcasterUserId,
       chatterLogin,
       message: error.message,
       details: error.details || null,
     });
+
+    try {
+      await sendTwitchChatMessage({
+        broadcasterUserId,
+        message,
+      });
+    } catch (fallbackError) {
+      console.warn("[eventsub/chat] failed to send fallback acknowledgement", {
+        broadcasterUserId,
+        chatterLogin,
+        message: fallbackError.message,
+        details: fallbackError.details || null,
+      });
+
+      if (trackedChannelId) {
+        await updateDocument(collectionNames.trackedChannels, trackedChannelId, {
+          lastChatError:
+            fallbackError.message || error.message || "Twitch не отправил сообщение в чат.",
+          lastChatErrorDetails: fallbackError.details || error.details || null,
+          lastChatErrorAt: new Date().toISOString(),
+        });
+      }
+    }
   }
 }
 
@@ -203,6 +230,7 @@ export default async function handler(request, response) {
       broadcasterUserId,
       chatterLogin: payload?.event?.chatter_user_login || "",
       sourceMessageId: payload?.event?.message_id || "",
+      trackedChannelId: trackedChannel.id,
       text:
         result?.status === "pending_moderation"
           ? "отправил на модерацию!"
