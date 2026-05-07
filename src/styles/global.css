@@ -250,7 +250,7 @@ button {
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .page-card__description {
@@ -971,7 +971,8 @@ button {
 }
 
 .page-search--inline {
-  width: min(320px, 100%);
+  width: 320px;
+  flex: 0 0 320px;
 }
 
 .page-search__icon {
@@ -1883,11 +1884,13 @@ button {
 
   .page-card__action-group {
     width: 100%;
+    flex-wrap: wrap;
   }
 
   .page-search,
   .page-search--inline {
     width: 100%;
+    flex: 1 1 100%;
   }
 
   .tasks-table th + th,
