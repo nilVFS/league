@@ -119,6 +119,23 @@ function AdminPage() {
   const suggestionsState = useCollectionData(collectionNames.suggestions);
   const trackedChannelsState = useCollectionData(collectionNames.trackedChannels);
 
+  const refreshCollection = async (collectionName) => {
+    const refreshByCollection = {
+      [collectionNames.clips]: clipsState.refresh,
+      [collectionNames.participants]: participantsState.refresh,
+      [collectionNames.awards]: awardsState.refresh,
+      [collectionNames.ladderPlayers]: ladderPlayersState.refresh,
+      [collectionNames.achievementClaims]: achievementClaimsState.refresh,
+      [collectionNames.suggestions]: suggestionsState.refresh,
+      [collectionNames.trackedChannels]: trackedChannelsState.refresh,
+    };
+
+    const refresh = refreshByCollection[collectionName];
+    if (refresh) {
+      await refresh();
+    }
+  };
+
   const sortedAwards = useMemo(
     () =>
       [...awardsState.items].sort(
@@ -525,6 +542,7 @@ function AdminPage() {
     setMessage("");
     try {
       await deleteDocument(collectionName, id);
+      await refreshCollection(collectionName);
       setMessage(`${label} удалён.`);
     } catch (error) {
       setMessage(error.message || "Не удалось удалить запись.");
@@ -557,6 +575,10 @@ function AdminPage() {
       });
 
       await Promise.all(deletions);
+      await Promise.all([
+        ladderPlayersState.refresh(),
+        achievementClaimsState.refresh(),
+      ]);
 
       if (editingLadderPlayerId === player.playerId) {
         resetLadderPlayerForm();

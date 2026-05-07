@@ -28,7 +28,7 @@ async function readJson(response, fallbackMessage) {
   return payload;
 }
 
-async function fetchCollection(name) {
+export async function fetchCollection(name) {
   const response = await fetch(buildApiUrl(`/api/content?collection=${encodeURIComponent(name)}`), {
     credentials: "include",
   });
