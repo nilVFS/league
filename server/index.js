@@ -5,6 +5,7 @@ import adminActionHandler from "../api/admin/[action].js";
 import contentDocumentHandler from "../api/content/[collection]/[id].js";
 import contentIndexHandler from "../api/content/index.js";
 import importClipsHandler from "../api/cron/import-clips.js";
+import ladderPublicHandler from "../api/ladder/public.js";
 import ladderSubmitHandler from "../api/ladder/submit.js";
 import twitchAuthCallbackHandler from "../api/twitch/auth/callback.js";
 import twitchAuthStartHandler from "../api/twitch/auth/start.js";
@@ -30,10 +31,21 @@ function isTimerImportRequest(pathname, method, body) {
 }
 
 function getAllowedOrigins() {
-  return String(process.env.ALLOWED_ORIGINS || "")
+  const configuredOrigins = String(process.env.ALLOWED_ORIGINS || "")
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean);
+
+  if (configuredOrigins.length) {
+    return configuredOrigins;
+  }
+
+  return [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+  ];
 }
 
 function applyCors(request, response) {
@@ -159,6 +171,11 @@ function matchRoute(pathname) {
     {
       pattern: /^\/api\/cron\/import-clips\/?$/,
       handler: importClipsHandler,
+      params: [],
+    },
+    {
+      pattern: /^\/api\/ladder\/public\/?$/,
+      handler: ladderPublicHandler,
       params: [],
     },
     {

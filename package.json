@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start:api": "node server/index.js"
+    "start:api": "node server/index.js",
+    "seed:ladder-demo": "node scripts/seed-ladder-demo.mjs"
   },
   "dependencies": {
     "@ydbjs/auth-yandex-cloud": "^0.1.2",
