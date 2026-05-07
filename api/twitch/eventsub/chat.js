@@ -13,6 +13,7 @@ const MESSAGE_TIMESTAMP_HEADER = "twitch-eventsub-message-timestamp";
 const MESSAGE_SIGNATURE_HEADER = "twitch-eventsub-message-signature";
 const MESSAGE_TYPE_HEADER = "twitch-eventsub-message-type";
 const HMAC_PREFIX = "sha256=";
+const CHAT_ACK_COOLDOWN_MS = 3000;
 
 async function readRawBody(request) {
   const chunks = [];
@@ -116,6 +117,7 @@ async function sendChatAcknowledgement({
   broadcasterUserId,
   chatterLogin,
   sourceMessageId,
+  trackedChannel,
   trackedChannelId,
   text,
 }) {
@@ -124,13 +126,63 @@ async function sendChatAcknowledgement({
   }
 
   const message = `@${chatterLogin} ${text}`;
+  const channelId = trackedChannelId || trackedChannel?.id || "";
+  const lastAttemptTime =
+    Date.parse(
+      trackedChannel?.lastChatAttemptAt ||
+        trackedChannel?.lastChatSentAt ||
+        trackedChannel?.lastChatErrorAt ||
+        ""
+    ) || 0;
+
+  if (lastAttemptTime && Date.now() - lastAttemptTime < CHAT_ACK_COOLDOWN_MS) {
+    if (channelId) {
+      await updateDocument(collectionNames.trackedChannels, channelId, {
+        lastChatSkippedAt: new Date().toISOString(),
+        lastChatSkippedReason: "cooldown",
+      });
+    }
+
+    return;
+  }
+
+  if (channelId) {
+    await updateDocument(collectionNames.trackedChannels, channelId, {
+      lastChatAttemptAt: new Date().toISOString(),
+    });
+  }
+
+  const isRateLimitError = (error) => {
+    const messageText = String(error?.message || "").toLowerCase();
+    const detailsMessage = String(error?.details?.message || "").toLowerCase();
+
+    return (
+      error?.statusCode === 429 ||
+      error?.details?.status === 429 ||
+      messageText.includes("too many requests") ||
+      messageText.includes("too quickly") ||
+      detailsMessage.includes("too many requests") ||
+      detailsMessage.includes("too quickly")
+    );
+  };
+  const markError = async (error) => {
+    if (!channelId) {
+      return;
+    }
+
+    await updateDocument(collectionNames.trackedChannels, channelId, {
+      lastChatError: error.message || "Twitch не отправил сообщение в чат.",
+      lastChatErrorDetails: error.details || null,
+      lastChatErrorAt: new Date().toISOString(),
+    });
+  };
   const markSent = async (mode) => {
-    if (!trackedChannelId) {
+    if (!channelId) {
       return;
     }
 
     try {
-      await updateDocument(collectionNames.trackedChannels, trackedChannelId, {
+      await updateDocument(collectionNames.trackedChannels, channelId, {
         lastChatSentAt: new Date().toISOString(),
         lastChatSentMode: mode,
         lastChatError: "",
@@ -140,7 +192,7 @@ async function sendChatAcknowledgement({
     } catch (statusError) {
       console.warn("[eventsub/chat] failed to update chat sent status", {
         broadcasterUserId,
-        trackedChannelId,
+        trackedChannelId: channelId,
         message: statusError.message,
       });
     }
@@ -161,6 +213,11 @@ async function sendChatAcknowledgement({
       details: error.details || null,
     });
 
+    if (isRateLimitError(error)) {
+      await markError(error);
+      return;
+    }
+
     try {
       await sendTwitchChatMessage({
         broadcasterUserId,
@@ -175,14 +232,7 @@ async function sendChatAcknowledgement({
         details: fallbackError.details || null,
       });
 
-      if (trackedChannelId) {
-        await updateDocument(collectionNames.trackedChannels, trackedChannelId, {
-          lastChatError:
-            fallbackError.message || error.message || "Twitch не отправил сообщение в чат.",
-          lastChatErrorDetails: fallbackError.details || error.details || null,
-          lastChatErrorAt: new Date().toISOString(),
-        });
-      }
+      await markError(fallbackError);
     }
   }
 }
@@ -253,6 +303,7 @@ export default async function handler(request, response) {
       broadcasterUserId,
       chatterLogin: payload?.event?.chatter_user_login || "",
       sourceMessageId: payload?.event?.message_id || "",
+      trackedChannel,
       trackedChannelId: trackedChannel.id,
       text:
         result?.status === "pending_moderation"

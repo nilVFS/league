@@ -1888,6 +1888,17 @@ function AdminPage() {
                                 {channel.lastChatSentAt ? (
                                   <div className="admin-list__meta">
                                     Последний ответ в чат: {channel.lastChatSentAt}
+                                    {channel.lastChatSentMode
+                                      ? ` • ${channel.lastChatSentMode}`
+                                      : ""}
+                                  </div>
+                                ) : null}
+                                {channel.lastChatSkippedAt ? (
+                                  <div className="admin-list__meta">
+                                    Пропущен ответ: {channel.lastChatSkippedAt}
+                                    {channel.lastChatSkippedReason
+                                      ? ` • ${channel.lastChatSkippedReason}`
+                                      : ""}
                                   </div>
                                 ) : null}
                                 {channel.lastChatError ? (
