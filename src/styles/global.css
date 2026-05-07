@@ -1534,6 +1534,10 @@ button {
   background: rgba(17, 11, 6, 0.46);
 }
 
+.admin-list__body {
+  min-width: 0;
+}
+
 .admin-list__channel {
   margin-bottom: 4px;
   font-size: 12px;
@@ -1550,11 +1554,31 @@ button {
   line-height: 1.5;
 }
 
+.admin-list__meta--error {
+  color: #ffad8f;
+}
+
 .admin-list__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   justify-content: flex-end;
+}
+
+.admin-debug {
+  max-width: min(100%, 760px);
+  max-height: 240px;
+  margin: 10px 0 0;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 12px;
+  border: 1px solid rgba(255, 173, 143, 0.22);
+  border-radius: 12px;
+  background: rgba(17, 11, 6, 0.68);
+  color: #ffd2c2;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .modal {

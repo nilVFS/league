@@ -124,6 +124,27 @@ async function sendChatAcknowledgement({
   }
 
   const message = `@${chatterLogin} ${text}`;
+  const markSent = async (mode) => {
+    if (!trackedChannelId) {
+      return;
+    }
+
+    try {
+      await updateDocument(collectionNames.trackedChannels, trackedChannelId, {
+        lastChatSentAt: new Date().toISOString(),
+        lastChatSentMode: mode,
+        lastChatError: "",
+        lastChatErrorDetails: null,
+        lastChatErrorAt: "",
+      });
+    } catch (statusError) {
+      console.warn("[eventsub/chat] failed to update chat sent status", {
+        broadcasterUserId,
+        trackedChannelId,
+        message: statusError.message,
+      });
+    }
+  };
 
   try {
     await sendTwitchChatMessage({
@@ -131,6 +152,7 @@ async function sendChatAcknowledgement({
       message,
       replyParentMessageId: sourceMessageId,
     });
+    await markSent("reply");
   } catch (error) {
     console.warn("[eventsub/chat] failed to send reply acknowledgement", {
       broadcasterUserId,
@@ -144,6 +166,7 @@ async function sendChatAcknowledgement({
         broadcasterUserId,
         message,
       });
+      await markSent("message");
     } catch (fallbackError) {
       console.warn("[eventsub/chat] failed to send fallback acknowledgement", {
         broadcasterUserId,

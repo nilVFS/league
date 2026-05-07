@@ -57,6 +57,7 @@ const adminTabs = [
   { id: "participants", label: "Участники" },
   { id: "awards", label: "Награды" },
   { id: "ladder", label: "Ладдер" },
+  { id: "bot", label: "Twitch bot" },
   { id: "requests", label: "Запросы" },
 ];
 
@@ -69,6 +70,22 @@ function normalizePlayerTag(value = "") {
 
 function getDocumentStorageId(item) {
   return item?._storageId || item?.id || "";
+}
+
+function formatJsonDetails(value) {
+  if (!value) {
+    return "";
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
 }
 
 function AdminPage() {
@@ -100,6 +117,7 @@ function AdminPage() {
   const ladderPlayersState = useCollectionData(collectionNames.ladderPlayers);
   const achievementClaimsState = useCollectionData(collectionNames.achievementClaims);
   const suggestionsState = useCollectionData(collectionNames.suggestions);
+  const trackedChannelsState = useCollectionData(collectionNames.trackedChannels);
 
   const sortedAwards = useMemo(
     () =>
@@ -1830,6 +1848,66 @@ function AdminPage() {
                     </div>
                   ) : (
                     <div className="state-box">Пока нет запросов на модерацию.</div>
+                  )}
+                </section>
+              </div>
+            ) : null}
+
+            {activeTab === "bot" ? (
+              <div className="admin-pane">
+                <section className="admin-card">
+                  <h2>Подключённые Twitch-каналы</h2>
+                  {trackedChannelsState.error ? (
+                    <div className="state-box state-box--error">
+                      {trackedChannelsState.error}
+                    </div>
+                  ) : null}
+
+                  {trackedChannelsState.items.length ? (
+                    <div className="admin-card__content admin-card__content--scroll">
+                      <div className="admin-list">
+                        {trackedChannelsState.items.map((channel) => {
+                          const details = formatJsonDetails(channel.lastChatErrorDetails);
+
+                          return (
+                            <div className="admin-list__item" key={channel.id}>
+                              <div className="admin-list__body">
+                                <strong>
+                                  {channel.displayName ||
+                                    channel.broadcasterLogin ||
+                                    channel.broadcasterUserId}
+                                </strong>
+                                <div className="admin-list__meta">
+                                  @{channel.broadcasterLogin || "unknown"} • id{" "}
+                                  {channel.broadcasterUserId || "unknown"}
+                                </div>
+                                <div className="admin-list__meta">
+                                  Подписка: {channel.subscriptionStatus || "unknown"}
+                                  {channel.enabled === false ? " • отключён" : " • включён"}
+                                </div>
+                                {channel.lastChatSentAt ? (
+                                  <div className="admin-list__meta">
+                                    Последний ответ в чат: {channel.lastChatSentAt}
+                                  </div>
+                                ) : null}
+                                {channel.lastChatError ? (
+                                  <div className="admin-list__meta admin-list__meta--error">
+                                    Ошибка чата: {channel.lastChatError}
+                                  </div>
+                                ) : null}
+                                {details ? (
+                                  <pre className="admin-debug">{details}</pre>
+                                ) : null}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="state-box">
+                      Пока нет подключённых каналов. После OAuth или первого EventSub они появятся здесь.
+                    </div>
                   )}
                 </section>
               </div>
