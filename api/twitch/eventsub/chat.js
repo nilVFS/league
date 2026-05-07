@@ -13,7 +13,8 @@ const MESSAGE_TIMESTAMP_HEADER = "twitch-eventsub-message-timestamp";
 const MESSAGE_SIGNATURE_HEADER = "twitch-eventsub-message-signature";
 const MESSAGE_TYPE_HEADER = "twitch-eventsub-message-type";
 const HMAC_PREFIX = "sha256=";
-const CHAT_ACK_COOLDOWN_MS = 3000;
+const CHAT_ACK_COOLDOWN_MS = 30000;
+const CHAT_ACK_RATE_LIMIT_BACKOFF_MS = 120000;
 
 async function readRawBody(request) {
   const chunks = [];
@@ -79,6 +80,33 @@ function isExpectedChatSubscription(payload, broadcasterUserId) {
   );
 }
 
+function isRateLimitError(error) {
+  const messageText = String(error?.message || "").toLowerCase();
+  const detailsMessage = String(error?.details?.message || "").toLowerCase();
+
+  return (
+    error?.statusCode === 429 ||
+    error?.details?.status === 429 ||
+    messageText.includes("too many requests") ||
+    messageText.includes("too quickly") ||
+    detailsMessage.includes("too many requests") ||
+    detailsMessage.includes("too quickly")
+  );
+}
+
+function hasRecentRateLimitError(channel) {
+  const lastErrorTime = Date.parse(channel?.lastChatErrorAt || "") || 0;
+
+  return (
+    lastErrorTime &&
+    isRateLimitError({
+      message: channel?.lastChatError || "",
+      details: channel?.lastChatErrorDetails || null,
+    }) &&
+    Date.now() - lastErrorTime < CHAT_ACK_RATE_LIMIT_BACKOFF_MS
+  );
+}
+
 async function findOrRecoverTrackedChannel({
   payload,
   broadcasterUserId,
@@ -127,6 +155,16 @@ async function sendChatAcknowledgement({
 
   const message = `@${chatterLogin} ${text}`;
   const channelId = trackedChannelId || trackedChannel?.id || "";
+  const markSkipped = async (reason) => {
+    if (!channelId) {
+      return;
+    }
+
+    await updateDocument(collectionNames.trackedChannels, channelId, {
+      lastChatSkippedAt: new Date().toISOString(),
+      lastChatSkippedReason: reason,
+    });
+  };
   const lastAttemptTime =
     Date.parse(
       trackedChannel?.lastChatAttemptAt ||
@@ -135,14 +173,13 @@ async function sendChatAcknowledgement({
         ""
     ) || 0;
 
-  if (lastAttemptTime && Date.now() - lastAttemptTime < CHAT_ACK_COOLDOWN_MS) {
-    if (channelId) {
-      await updateDocument(collectionNames.trackedChannels, channelId, {
-        lastChatSkippedAt: new Date().toISOString(),
-        lastChatSkippedReason: "cooldown",
-      });
-    }
+  if (hasRecentRateLimitError(trackedChannel)) {
+    await markSkipped("rate_limit_backoff");
+    return;
+  }
 
+  if (lastAttemptTime && Date.now() - lastAttemptTime < CHAT_ACK_COOLDOWN_MS) {
+    await markSkipped("cooldown");
     return;
   }
 
@@ -152,19 +189,6 @@ async function sendChatAcknowledgement({
     });
   }
 
-  const isRateLimitError = (error) => {
-    const messageText = String(error?.message || "").toLowerCase();
-    const detailsMessage = String(error?.details?.message || "").toLowerCase();
-
-    return (
-      error?.statusCode === 429 ||
-      error?.details?.status === 429 ||
-      messageText.includes("too many requests") ||
-      messageText.includes("too quickly") ||
-      detailsMessage.includes("too many requests") ||
-      detailsMessage.includes("too quickly")
-    );
-  };
   const markError = async (error) => {
     if (!channelId) {
       return;

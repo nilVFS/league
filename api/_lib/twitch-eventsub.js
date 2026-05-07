@@ -219,10 +219,19 @@ export async function createOrReuseChatMessageSubscription({
   );
 
   const callbackNormalized = String(callbackUrl || "").trim().replace(/\/+$/, "");
-  const existingSubscription = matchingSubscriptions.find(
+  const sameCallbackSubscriptions = matchingSubscriptions.filter(
     (subscription) =>
       String(subscription?.transport?.callback || "").trim().replace(/\/+$/, "") ===
       callbackNormalized
+  );
+  const existingSubscription = sameCallbackSubscriptions.find(
+    (subscription) => subscription?.status === "enabled"
+  );
+
+  await Promise.all(
+    matchingSubscriptions
+      .filter((subscription) => subscription?.id !== existingSubscription?.id)
+      .map((subscription) => deleteEventsubSubscription(subscription?.id, accessToken))
   );
 
   if (existingSubscription) {
@@ -231,12 +240,6 @@ export async function createOrReuseChatMessageSubscription({
       reused: true,
     };
   }
-
-  await Promise.all(
-    matchingSubscriptions.map((subscription) =>
-      deleteEventsubSubscription(subscription?.id, accessToken)
-    )
-  );
 
   const payload = await twitchApiRequest("/eventsub/subscriptions", accessToken, {
     method: "POST",
