@@ -112,6 +112,7 @@ function ClipsPage() {
         title="Подборка лучших клипов"
         titleAction={
           <div className="page-card__action-group">
+            <SuggestionForm type="clip" />
             <label className="page-search page-search--inline" htmlFor="clips-search">
               <span className="sr-only">Поиск по клипам</span>
               <span aria-hidden="true" className="page-search__icon">
@@ -125,7 +126,6 @@ function ClipsPage() {
                 value={search}
               />
             </label>
-            <SuggestionForm type="clip" />
           </div>
         }
       >
