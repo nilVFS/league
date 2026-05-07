@@ -31,19 +31,24 @@ function AwardsPage() {
 
   return (
     <main className="inner-page">
-      <PageIntroCard title="Цели и баллы">
-        <div className="awards-toolbar">
-          <label className="awards-search" htmlFor="awards-search">
-            <span className="awards-search__label">Поиск</span>
+      <PageIntroCard
+        title="Цели и баллы"
+        titleAction={
+          <label className="awards-search awards-search--inline" htmlFor="awards-search">
+            <span className="sr-only">Поиск по целям</span>
+            <span aria-hidden="true" className="awards-search__icon">
+              ⌕
+            </span>
             <input
               id="awards-search"
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Номер, цель или примечание"
+              placeholder="Поиск по целям"
               type="search"
               value={search}
             />
           </label>
-        </div>
+        }
+      >
         {loading ? <div className="state-box">Загружаем награды...</div> : null}
         {error ? <div className="state-box state-box--error">{error}</div> : null}
 

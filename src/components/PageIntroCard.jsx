@@ -1,14 +1,22 @@
 function PageIntroCard({ eyebrow, title, description, titleAction = null, children }) {
+  const hasTopline = Boolean(eyebrow || titleAction);
+  const hasDescription = Boolean(description);
+  const toplineClassName = `page-card__topline${
+    !eyebrow && titleAction ? " page-card__topline--actions-only" : ""
+  }`;
+
   return (
     <section className="page-card">
-      <div className="page-card__topline">
-        <span className="page-card__eyebrow">{eyebrow}</span>
-        {titleAction ? <div className="page-card__action">{titleAction}</div> : null}
-      </div>
+      {hasTopline ? (
+        <div className={toplineClassName}>
+          {eyebrow ? <span className="page-card__eyebrow">{eyebrow}</span> : null}
+          {titleAction ? <div className="page-card__action">{titleAction}</div> : null}
+        </div>
+      ) : null}
       <div className="page-card__heading">
         <h1 className="page-card__title">{title}</h1>
       </div>
-      <p className="page-card__description">{description}</p>
+      {hasDescription ? <p className="page-card__description">{description}</p> : null}
       {children}
     </section>
   );
