@@ -1,14 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import PageIntroCard from "../components/PageIntroCard";
-import { seedAwards, seedClips, seedParticipants } from "../data/seedContent";
 import useCollectionData from "../hooks/useCollectionData";
 import { getAdminSession, loginAdmin, logoutAdmin } from "../lib/admin";
 import {
   collectionNames,
   createDocument,
   deleteDocument,
-  isCollectionEmpty,
-  seedCollection,
   updateDocument,
 } from "../lib/content";
 import {
@@ -103,6 +100,23 @@ function AdminPage() {
   const ladderPlayersState = useCollectionData(collectionNames.ladderPlayers);
   const achievementClaimsState = useCollectionData(collectionNames.achievementClaims);
   const suggestionsState = useCollectionData(collectionNames.suggestions);
+
+  const sortedAwards = useMemo(
+    () =>
+      [...awardsState.items].sort(
+        (left, right) => Number(left.code || 0) - Number(right.code || 0)
+      ),
+    [awardsState.items]
+  );
+
+  const nextAwardCode = useMemo(() => {
+    const maxCode = sortedAwards.reduce(
+      (maxValue, award) => Math.max(maxValue, Number(award.code || 0)),
+      0
+    );
+
+    return maxCode + 1;
+  }, [sortedAwards]);
 
   const pendingSuggestions = useMemo(
     () =>
@@ -356,35 +370,6 @@ function AdminPage() {
     }
   };
 
-  const handleSeed = async () => {
-    setSubmitting("seed");
-    setMessage("");
-
-    try {
-      const [clipsEmpty, participantsEmpty, awardsEmpty] = await Promise.all([
-        isCollectionEmpty(collectionNames.clips),
-        isCollectionEmpty(collectionNames.participants),
-        isCollectionEmpty(collectionNames.awards),
-      ]);
-
-      if (!clipsEmpty || !participantsEmpty || !awardsEmpty) {
-        throw new Error("Сидинг доступен только для пустых коллекций.");
-      }
-
-      await Promise.all([
-        seedCollection(collectionNames.clips, seedClips),
-        seedCollection(collectionNames.participants, seedParticipants),
-        seedCollection(collectionNames.awards, seedAwards),
-      ]);
-
-      setMessage("Тестовые данные загружены в Firebase.");
-    } catch (error) {
-      setMessage(error.message || "Не удалось выполнить сидинг.");
-    } finally {
-      setSubmitting("");
-    }
-  };
-
   const handleClipSubmit = async (event) => {
     event.preventDefault();
     setSubmitting("clip");
@@ -489,8 +474,11 @@ function AdminPage() {
     setMessage("");
 
     try {
+      const resolvedCode = editingAwardId
+        ? Number(awardForm.code || 0)
+        : nextAwardCode;
       const payload = {
-        code: Number(awardForm.code),
+        code: resolvedCode,
         category: awardForm.category.trim() || "Общие",
         title: awardForm.title.trim(),
         score: Number(awardForm.score),
@@ -918,14 +906,6 @@ function AdminPage() {
 
             <div className="admin-toolbar__actions">
               <button
-                className="admin-button"
-                disabled={submitting === "seed"}
-                onClick={handleSeed}
-                type="button"
-              >
-                {submitting === "seed" ? "Заполняем..." : "Заполнить тестовыми данными"}
-              </button>
-              <button
                 className="admin-button admin-button--ghost"
                 disabled={submitting === "logout"}
                 onClick={handleLogout}
@@ -1252,18 +1232,12 @@ function AdminPage() {
                 <section className="admin-card">
                   <h2>{editingAwardId ? "Редактировать награду" : "Добавить награду"}</h2>
                   <form className="admin-form" onSubmit={handleAwardSubmit}>
-                    <label className="admin-field">
+                    <div className="admin-field admin-field--static">
                       <span>Номер достижения</span>
-                      <input
-                        min="1"
-                        onChange={(event) =>
-                          setAwardForm((current) => ({ ...current, code: event.target.value }))
-                        }
-                        required
-                        type="number"
-                        value={awardForm.code}
-                      />
-                    </label>
+                      <div className="admin-static-value">
+                        #{editingAwardId ? awardForm.code || "—" : nextAwardCode}
+                      </div>
+                    </div>
                     <label className="admin-field">
                       <span>Раздел</span>
                       <input
@@ -1354,7 +1328,7 @@ function AdminPage() {
                   <h2>Список наград</h2>
                   <div className="admin-card__content admin-card__content--scroll">
                     <div className="admin-list">
-                      {awardsState.items.map((award) => (
+                      {sortedAwards.map((award) => (
                         <div className="admin-list__item" key={award.id}>
                           <div>
                             <strong>{award.title}</strong>

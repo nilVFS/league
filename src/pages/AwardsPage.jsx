@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import PageIntroCard from "../components/PageIntroCard";
 import useCollectionData from "../hooks/useCollectionData";
 import { collectionNames } from "../lib/content";
@@ -9,78 +9,85 @@ function AwardsPage() {
     loading,
     error,
   } = useCollectionData(collectionNames.awards);
-  const groupedAwards = useMemo(() => {
-    const groups = new Map();
+  const [search, setSearch] = useState("");
 
-    awards.forEach((award) => {
-      const category = (award.category || "Общие").trim() || "Общие";
-      if (!groups.has(category)) {
-        groups.set(category, []);
-      }
+  const sortedAwards = useMemo(
+    () => [...awards].sort((left, right) => Number(left.code || 0) - Number(right.code || 0)),
+    [awards]
+  );
 
-      groups.get(category).push(award);
-    });
+  const filteredAwards = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) {
+      return sortedAwards;
+    }
 
-    return Array.from(groups.entries());
-  }, [awards]);
+    return sortedAwards.filter((award) =>
+      [award.title, award.code]
+        .map((value) => String(value || "").toLowerCase())
+        .some((value) => value.includes(query))
+    );
+  }, [search, sortedAwards]);
 
   return (
     <main className="inner-page">
-      <PageIntroCard
-        description="Список наград и баллов, как мне не будет лень, тогда и добавлю."
-        eyebrow="Награды"
-        title="Список наград и баллов"
-      >
+      <PageIntroCard title="Цели и баллы">
+        <div className="awards-toolbar">
+          <label className="awards-search" htmlFor="awards-search">
+            <span className="awards-search__label">Поиск</span>
+            <input
+              id="awards-search"
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Номер, цель или примечание"
+              type="search"
+              value={search}
+            />
+          </label>
+        </div>
         {loading ? <div className="state-box">Загружаем награды...</div> : null}
         {error ? <div className="state-box state-box--error">{error}</div> : null}
 
         {!loading && !error ? (
           awards.length ? (
-            <div className="awards-groups">
-              {groupedAwards.map(([category, items]) => (
-                <section className="awards-group" key={category}>
-                  <h2 className="awards-group__title">{category}</h2>
-                  <div className="tasks-table tasks-table--awards">
-                    <table>
-                      <colgroup>
-                        <col className="tasks-table__col tasks-table__col--number" />
-                        <col className="tasks-table__col tasks-table__col--title" />
-                        <col className="tasks-table__col tasks-table__col--score" />
-                        <col className="tasks-table__col tasks-table__col--score" />
-                        <col className="tasks-table__col tasks-table__col--description" />
-                      </colgroup>
-                      <thead>
-                        <tr>
-                          <th>№</th>
-                          <th>Награда</th>
-                          <th>Баллы</th>
-                          <th>Бонус первому</th>
-                          <th>Примечание</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {items.map((item) => (
-                          <tr key={item.id}>
-                            <td data-label="№">{item.code ?? "—"}</td>
-                            <td data-label="Награда">{item.title}</td>
-                            <td className="tasks-table__score" data-label="Баллы">
-                              {item.score}
-                            </td>
-                            <td className="tasks-table__score" data-label="Бонус первому">
-                              {Number(item.bonusScore || 0) || "—"}
-                            </td>
-                            <td data-label="Примечание">{item.description || "—"}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </section>
-              ))}
+            <div className="tasks-table tasks-table--awards">
+              <table>
+                <colgroup>
+                  <col className="tasks-table__col tasks-table__col--number" />
+                  <col className="tasks-table__col tasks-table__col--title" />
+                  <col className="tasks-table__col tasks-table__col--score" />
+                  <col className="tasks-table__col tasks-table__col--score" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>№</th>
+                    <th>Цель</th>
+                    <th>Баллы</th>
+                    <th>Бонус первому</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredAwards.map((item) => (
+                    <tr key={item.id}>
+                      <td data-label="№">{item.code ?? "—"}</td>
+                      <td data-label="Цель">{item.title}</td>
+                      <td className="tasks-table__score" data-label="Баллы">
+                        {item.score}
+                      </td>
+                      <td className="tasks-table__score" data-label="Бонус первому">
+                        {Number(item.bonusScore || 0) || "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           ) : (
             <div className="state-box">Пока нет наград. Добавь их через `/admin`.</div>
           )
+        ) : null}
+
+        {!loading && !error && awards.length && !filteredAwards.length ? (
+          <div className="state-box">По этому запросу ничего не нашлось.</div>
         ) : null}
       </PageIntroCard>
     </main>

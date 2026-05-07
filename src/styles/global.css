@@ -966,6 +966,40 @@ button {
   overflow-x: auto;
 }
 
+.awards-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 28px;
+}
+
+.awards-search {
+  width: min(360px, 100%);
+  display: grid;
+  gap: 10px;
+}
+
+.awards-search__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: #d8bf8e;
+}
+
+.awards-search input {
+  width: 100%;
+  min-height: 54px;
+  padding: 0 18px;
+  border: 1px solid rgba(200, 166, 108, 0.18);
+  border-radius: 18px;
+  background: rgba(24, 16, 9, 0.82);
+  color: var(--text-main);
+}
+
+.awards-search input::placeholder {
+  color: rgba(222, 203, 168, 0.42);
+}
+
 .tasks-table__col--title {
   width: 60%;
 }
@@ -996,14 +1030,13 @@ button {
   font-size: 15px;
 }
 
-.tasks-table tr:hover {
-  background: rgba(87, 61, 31, 0.16);
+.tasks-table th + th,
+.tasks-table td + td {
+  border-left: 1px solid rgba(200, 166, 108, 0.1);
 }
 
-.tasks-table th:last-child,
-.tasks-table td:last-child {
-  width: 180px;
-  text-align: right;
+.tasks-table tr:hover {
+  background: rgba(87, 61, 31, 0.16);
 }
 
 .tasks-table--awards th:nth-child(2),
@@ -1013,25 +1046,14 @@ button {
   text-align: left;
 }
 
+.tasks-table--awards th:last-child,
+.tasks-table--awards td:last-child {
+  text-align: left;
+}
+
 .tasks-table__score {
   color: var(--gold-bright);
   font-weight: 700;
-}
-
-.awards-groups {
-  display: grid;
-  gap: 28px;
-  margin-top: 34px;
-}
-
-.awards-group__title {
-  margin: 0 0 14px;
-  font-size: clamp(22px, 2.4vw, 30px);
-  color: var(--gold-bright);
-}
-
-.awards-group .tasks-table {
-  margin-top: 0;
 }
 
 .state-box {
@@ -1344,6 +1366,20 @@ button {
 .admin-field textarea {
   resize: vertical;
   min-height: 96px;
+}
+
+.admin-field--static {
+  align-content: start;
+}
+
+.admin-static-value {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(200, 166, 108, 0.14);
+  border-radius: 14px;
+  background: rgba(17, 11, 6, 0.52);
+  color: var(--gold-bright);
+  font-weight: 700;
 }
 
 .admin-button {
@@ -1834,6 +1870,19 @@ button {
   .tasks-table th:last-child,
   .tasks-table td:last-child {
     width: 110px;
+  }
+
+  .tasks-table th + th,
+  .tasks-table td + td {
+    border-left: 0;
+  }
+
+  .awards-toolbar {
+    justify-content: stretch;
+  }
+
+  .awards-search {
+    width: 100%;
   }
 
   .tasks-table--awards table,
