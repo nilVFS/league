@@ -468,5 +468,5 @@ export async function deleteDocument(name, id) {
     throw error;
   }
 
-  await deleteDocumentFromYdb(name, id);
+  await deleteDocumentFromYdb(name, current._storageId || current.id || id);
 }

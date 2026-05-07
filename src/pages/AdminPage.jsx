@@ -1665,74 +1665,78 @@ function AdminPage() {
 
                             {selectedLadderPlayer.claims.length ? (
                               <div className="admin-list admin-list--compact">
-                                {selectedLadderPlayer.claims.map((claim) => (
-                                  <div className="admin-list__item" key={claim.id}>
-                                    <div>
-                                      <strong>
-                                        #{claim.achievementCode} •{" "}
-                                        {claim.achievementTitle || "Без названия"}
-                                      </strong>
-                                      <div className="admin-list__meta">
-                                        {claim.achievementScore ?? 0} баллов
-                                        {Number(claim.achievementBonusScore || 0)
-                                          ? ` • бонус первому ${claim.achievementBonusScore}`
-                                          : ""}
-                                      </div>
-                                      <div className="admin-list__meta">
-                                        Статус: {claim.status || "accepted"}
-                                        {claim.chatterLogin ? ` • отправил ${claim.chatterLogin}` : ""}
-                                        {claim.broadcasterLogin
-                                          ? ` • канал ${claim.broadcasterLogin}`
-                                          : ""}
-                                      </div>
-                                      {claim.proofUrl ? (
-                                        <div className="admin-list__meta">
-                                          <a
-                                            href={claim.proofUrl}
-                                            rel="noreferrer noopener"
-                                            target="_blank"
-                                          >
-                                            {claim.proofUrl}
-                                          </a>
-                                        </div>
-                                      ) : null}
-                                    </div>
+                                {selectedLadderPlayer.claims.map((claim) => {
+                                  const claimStorageId = getDocumentStorageId(claim);
 
-                                    <div className="admin-list__actions">
-                                      <button
-                                        className="admin-button admin-button--ghost"
-                                        onClick={() => {
-                                          setEditingAchievementClaimId(
-                                            getDocumentStorageId(claim)
-                                          );
-                                          setAchievementClaimForm({
-                                            playerTag: claim.playerTag || "",
-                                            achievementCode: String(claim.achievementCode ?? ""),
-                                            proofUrl: claim.proofUrl || "",
-                                            status: claim.status || "accepted",
-                                          });
-                                        }}
-                                        type="button"
-                                      >
-                                        Редактировать
-                                      </button>
-                                      <button
-                                        className="admin-button admin-button--ghost"
-                                        disabled={submitting === `delete-${claim.id}`}
-                                        onClick={() =>
-                                          handleDelete(
-                                            collectionNames.achievementClaims,
-                                            getDocumentStorageId(claim),
-                                            "Выполнение"
-                                          )
-                                        }
-                                        type="button"
-                                      >
-                                        Удалить
-                                      </button>
+                                  return (
+                                    <div className="admin-list__item" key={claimStorageId}>
+                                      <div>
+                                        <strong>
+                                          #{claim.achievementCode} •{" "}
+                                          {claim.achievementTitle || "Без названия"}
+                                        </strong>
+                                        <div className="admin-list__meta">
+                                          {claim.achievementScore ?? 0} баллов
+                                          {Number(claim.achievementBonusScore || 0)
+                                            ? ` • бонус первому ${claim.achievementBonusScore}`
+                                            : ""}
+                                        </div>
+                                        <div className="admin-list__meta">
+                                          Статус: {claim.status || "accepted"}
+                                          {claim.chatterLogin
+                                            ? ` • отправил ${claim.chatterLogin}`
+                                            : ""}
+                                          {claim.broadcasterLogin
+                                            ? ` • канал ${claim.broadcasterLogin}`
+                                            : ""}
+                                        </div>
+                                        {claim.proofUrl ? (
+                                          <div className="admin-list__meta">
+                                            <a
+                                              href={claim.proofUrl}
+                                              rel="noreferrer noopener"
+                                              target="_blank"
+                                            >
+                                              {claim.proofUrl}
+                                            </a>
+                                          </div>
+                                        ) : null}
+                                      </div>
+
+                                      <div className="admin-list__actions">
+                                        <button
+                                          className="admin-button admin-button--ghost"
+                                          onClick={() => {
+                                            setEditingAchievementClaimId(claimStorageId);
+                                            setAchievementClaimForm({
+                                              playerTag: claim.playerTag || "",
+                                              achievementCode: String(claim.achievementCode ?? ""),
+                                              proofUrl: claim.proofUrl || "",
+                                              status: claim.status || "accepted",
+                                            });
+                                          }}
+                                          type="button"
+                                        >
+                                          Редактировать
+                                        </button>
+                                        <button
+                                          className="admin-button admin-button--ghost"
+                                          disabled={submitting === `delete-${claimStorageId}`}
+                                          onClick={() =>
+                                            handleDelete(
+                                              collectionNames.achievementClaims,
+                                              claimStorageId,
+                                              "Выполнение"
+                                            )
+                                          }
+                                          type="button"
+                                        >
+                                          Удалить
+                                        </button>
+                                      </div>
                                     </div>
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                             ) : (
                               <div className="state-box">
