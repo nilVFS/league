@@ -3,23 +3,7 @@ function normalizeBaseUrl(value = "") {
 }
 
 export function getApiBaseUrl() {
-  const configuredBaseUrl = normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL || "");
-
-  if (configuredBaseUrl) {
-    return configuredBaseUrl;
-  }
-
-  if (typeof window === "undefined") {
-    return "";
-  }
-
-  const { hostname, protocol } = window.location;
-
-  if (hostname === "localhost" || hostname === "127.0.0.1") {
-    return `${protocol}//${hostname}:3000`;
-  }
-
-  return "";
+  return normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL || "");
 }
 
 export function buildApiUrl(path) {
