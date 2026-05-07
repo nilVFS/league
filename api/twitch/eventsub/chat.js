@@ -13,8 +13,6 @@ const MESSAGE_TIMESTAMP_HEADER = "twitch-eventsub-message-timestamp";
 const MESSAGE_SIGNATURE_HEADER = "twitch-eventsub-message-signature";
 const MESSAGE_TYPE_HEADER = "twitch-eventsub-message-type";
 const HMAC_PREFIX = "sha256=";
-const CHAT_ACK_COOLDOWN_MS = 30000;
-const CHAT_ACK_RATE_LIMIT_BACKOFF_MS = 120000;
 
 async function readRawBody(request) {
   const chunks = [];
@@ -94,19 +92,6 @@ function isRateLimitError(error) {
   );
 }
 
-function hasRecentRateLimitError(channel) {
-  const lastErrorTime = Date.parse(channel?.lastChatErrorAt || "") || 0;
-
-  return (
-    lastErrorTime &&
-    isRateLimitError({
-      message: channel?.lastChatError || "",
-      details: channel?.lastChatErrorDetails || null,
-    }) &&
-    Date.now() - lastErrorTime < CHAT_ACK_RATE_LIMIT_BACKOFF_MS
-  );
-}
-
 async function findOrRecoverTrackedChannel({
   payload,
   broadcasterUserId,
@@ -141,11 +126,27 @@ async function findOrRecoverTrackedChannel({
   });
 }
 
+async function hasProcessedSourceMessage(sourceMessageId) {
+  const normalizedMessageId = String(sourceMessageId || "").trim();
+
+  if (!normalizedMessageId) {
+    return false;
+  }
+
+  const [achievementClaims, suggestions] = await Promise.all([
+    listCollection(collectionNames.achievementClaims),
+    listCollection(collectionNames.suggestions),
+  ]);
+
+  return [...achievementClaims, ...suggestions].some(
+    (item) => String(item.sourceMessageId || "") === normalizedMessageId
+  );
+}
+
 async function sendChatAcknowledgement({
   broadcasterUserId,
   chatterLogin,
   sourceMessageId,
-  trackedChannel,
   trackedChannelId,
   text,
 }) {
@@ -154,34 +155,7 @@ async function sendChatAcknowledgement({
   }
 
   const message = `@${chatterLogin} ${text}`;
-  const channelId = trackedChannelId || trackedChannel?.id || "";
-  const markSkipped = async (reason) => {
-    if (!channelId) {
-      return;
-    }
-
-    await updateDocument(collectionNames.trackedChannels, channelId, {
-      lastChatSkippedAt: new Date().toISOString(),
-      lastChatSkippedReason: reason,
-    });
-  };
-  const lastAttemptTime =
-    Date.parse(
-      trackedChannel?.lastChatAttemptAt ||
-        trackedChannel?.lastChatSentAt ||
-        trackedChannel?.lastChatErrorAt ||
-        ""
-    ) || 0;
-
-  if (hasRecentRateLimitError(trackedChannel)) {
-    await markSkipped("rate_limit_backoff");
-    return;
-  }
-
-  if (lastAttemptTime && Date.now() - lastAttemptTime < CHAT_ACK_COOLDOWN_MS) {
-    await markSkipped("cooldown");
-    return;
-  }
+  const channelId = trackedChannelId || "";
 
   if (channelId) {
     await updateDocument(collectionNames.trackedChannels, channelId, {
@@ -314,8 +288,18 @@ export default async function handler(request, response) {
       return response.status(200).json({ ok: true, ignored: true });
     }
 
+    const sourceMessageId = payload?.event?.message_id || "";
+
+    if (await hasProcessedSourceMessage(sourceMessageId)) {
+      return response.status(200).json({
+        ok: true,
+        ignored: true,
+        reason: "duplicate_message",
+      });
+    }
+
     const result = await saveAchievementClaim(command, {
-      sourceMessageId: payload?.event?.message_id || "",
+      sourceMessageId,
       chatterLogin: payload?.event?.chatter_user_login || "",
       chatterName: payload?.event?.chatter_user_name || "",
       broadcasterUserId,
@@ -326,8 +310,7 @@ export default async function handler(request, response) {
     await sendChatAcknowledgement({
       broadcasterUserId,
       chatterLogin: payload?.event?.chatter_user_login || "",
-      sourceMessageId: payload?.event?.message_id || "",
-      trackedChannel,
+      sourceMessageId,
       trackedChannelId: trackedChannel.id,
       text:
         result?.status === "pending_moderation"
