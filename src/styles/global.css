@@ -251,6 +251,11 @@ button {
   justify-content: flex-end;
   gap: 12px;
   flex-wrap: nowrap;
+  min-width: fit-content;
+}
+
+.page-card__action-group > * {
+  flex: 0 0 auto;
 }
 
 .page-card__description {
@@ -1132,6 +1137,12 @@ button {
 
 .suggestion-box__trigger {
   white-space: nowrap;
+}
+
+.suggestion-box {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
 }
 
 .admin-auth,

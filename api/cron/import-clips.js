@@ -3,8 +3,11 @@ import { createDocument, listCollection } from "../_lib/content-store.js";
 const TWITCH_TOKEN_URL = "https://id.twitch.tv/oauth2/token";
 const TWITCH_USERS_URL = "https://api.twitch.tv/helix/users";
 const TWITCH_CLIPS_URL = "https://api.twitch.tv/helix/clips";
+const TWITCH_GAMES_URL = "https://api.twitch.tv/helix/games";
 const IMPORT_LOOKBACK_HOURS = 12;
-const MAX_CLIPS_PER_CHANNEL = 20;
+const TARGET_CLIP_GAME_NAME = "Path of Exile 2";
+const CLIPS_PAGE_SIZE = 100;
+const MAX_CLIP_PAGES_PER_CHANNEL = 3;
 
 function extractTwitchChannelLogin(value = "") {
   const input = String(value).trim();
@@ -87,14 +90,12 @@ async function getUsersByLogins(logins, clientId, accessToken) {
   return users;
 }
 
-async function getClipsForBroadcaster(broadcasterId, clientId, accessToken, startedAt) {
+async function getGameIdByName(gameName, clientId, accessToken) {
   const search = new URLSearchParams({
-    broadcaster_id: broadcasterId,
-    first: String(MAX_CLIPS_PER_CHANNEL),
-    started_at: startedAt,
+    name: gameName,
   });
 
-  const response = await fetch(`${TWITCH_CLIPS_URL}?${search.toString()}`, {
+  const response = await fetch(`${TWITCH_GAMES_URL}?${search.toString()}`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Client-Id": clientId,
@@ -102,11 +103,49 @@ async function getClipsForBroadcaster(broadcasterId, clientId, accessToken, star
   });
 
   if (!response.ok) {
-    throw new Error(`Не удалось получить клипы для broadcaster_id=${broadcasterId}.`);
+    throw new Error(`Не удалось получить Twitch-категорию ${gameName}.`);
   }
 
   const payload = await response.json();
-  return payload?.data || [];
+  return String(payload?.data?.[0]?.id || "").trim();
+}
+
+async function getClipsForBroadcaster(broadcasterId, clientId, accessToken, startedAt) {
+  const clips = [];
+  let cursor = "";
+
+  for (let page = 0; page < MAX_CLIP_PAGES_PER_CHANNEL; page += 1) {
+    const search = new URLSearchParams({
+      broadcaster_id: broadcasterId,
+      first: String(CLIPS_PAGE_SIZE),
+      started_at: startedAt,
+    });
+
+    if (cursor) {
+      search.set("after", cursor);
+    }
+
+    const response = await fetch(`${TWITCH_CLIPS_URL}?${search.toString()}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Client-Id": clientId,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Не удалось получить клипы для broadcaster_id=${broadcasterId}.`);
+    }
+
+    const payload = await response.json();
+    clips.push(...(payload?.data || []));
+
+    cursor = String(payload?.pagination?.cursor || "");
+    if (!cursor) {
+      break;
+    }
+  }
+
+  return clips;
 }
 
 function isAuthorized(request) {
@@ -174,16 +213,34 @@ export default async function handler(request, response) {
 
     const accessToken = await getAppAccessToken(clientId, clientSecret);
     const users = await getUsersByLogins(participantLogins, clientId, accessToken);
+    const targetGameName =
+      String(process.env.TWITCH_CLIP_GAME_NAME || "").trim() || TARGET_CLIP_GAME_NAME;
+    const targetGameId =
+      String(process.env.TWITCH_CLIP_GAME_ID || "").trim() ||
+      (await getGameIdByName(targetGameName, clientId, accessToken));
+
+    if (!targetGameId) {
+      return response.status(500).json({
+        error: `Twitch-категория ${targetGameName} не найдена.`,
+      });
+    }
+
     const startedAt = new Date(
       Date.now() - IMPORT_LOOKBACK_HOURS * 60 * 60 * 1000
     ).toISOString();
 
     let importedCount = 0;
+    let skippedByGameCount = 0;
 
     for (const user of users) {
       const clips = await getClipsForBroadcaster(user.id, clientId, accessToken, startedAt);
 
       for (const clip of clips) {
+        if (String(clip.game_id || "") !== targetGameId) {
+          skippedByGameCount += 1;
+          continue;
+        }
+
         const clipSlug = String(clip.id || "").trim();
         if (!clipSlug || existingSlugs.has(clipSlug) || importedSlugs.has(clipSlug)) {
           continue;
@@ -212,6 +269,9 @@ export default async function handler(request, response) {
       imported: importedCount,
       checkedChannels: users.length,
       lookbackHours: IMPORT_LOOKBACK_HOURS,
+      gameName: targetGameName,
+      gameId: targetGameId,
+      skippedByGame: skippedByGameCount,
     });
   } catch (error) {
     return response.status(500).json({
