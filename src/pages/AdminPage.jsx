@@ -1911,6 +1911,37 @@ function AdminPage() {
                                   Подписка: {channel.subscriptionStatus || "unknown"}
                                   {channel.enabled === false ? " • отключён" : " • включён"}
                                 </div>
+                                {channel.lastEventAt ? (
+                                  <div className="admin-list__meta">
+                                    Последний chat event: {channel.lastEventAt}
+                                    {channel.lastEventChatterLogin
+                                      ? ` • ${channel.lastEventChatterLogin}`
+                                      : ""}
+                                  </div>
+                                ) : null}
+                                {channel.lastEventText ? (
+                                  <div className="admin-list__meta">
+                                    Текст: {channel.lastEventText}
+                                  </div>
+                                ) : null}
+                                {channel.lastEventIgnoredReason ? (
+                                  <div className="admin-list__meta admin-list__meta--error">
+                                    Игнор: {channel.lastEventIgnoredReason}
+                                  </div>
+                                ) : null}
+                                {channel.lastCommandAcceptedAt ? (
+                                  <div className="admin-list__meta">
+                                    Команда принята: {channel.lastCommandAcceptedAt}
+                                    {channel.lastCommandStatus
+                                      ? ` • ${channel.lastCommandStatus}`
+                                      : ""}
+                                  </div>
+                                ) : null}
+                                {channel.lastCommandError ? (
+                                  <div className="admin-list__meta admin-list__meta--error">
+                                    Ошибка команды: {channel.lastCommandError}
+                                  </div>
+                                ) : null}
                                 {channel.lastChatSentAt ? (
                                   <div className="admin-list__meta">
                                     Последний ответ в чат: {channel.lastChatSentAt}

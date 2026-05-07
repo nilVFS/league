@@ -143,6 +143,21 @@ async function hasProcessedSourceMessage(sourceMessageId) {
   );
 }
 
+async function updateTrackedChannelDiagnostics(channelId, payload) {
+  if (!channelId) {
+    return;
+  }
+
+  try {
+    await updateDocument(collectionNames.trackedChannels, channelId, payload);
+  } catch (error) {
+    console.warn("[eventsub/chat] failed to update channel diagnostics", {
+      channelId,
+      message: error.message,
+    });
+  }
+}
+
 async function sendChatAcknowledgement({
   broadcasterUserId,
   chatterLogin,
@@ -282,15 +297,36 @@ export default async function handler(request, response) {
     }
 
     const text = payload?.event?.message?.text || "";
+    const sourceMessageId = payload?.event?.message_id || "";
+
+    await updateTrackedChannelDiagnostics(trackedChannel.id, {
+      lastEventAt: new Date().toISOString(),
+      lastEventMessageId: sourceMessageId,
+      lastEventText: text,
+      lastEventChatterLogin: payload?.event?.chatter_user_login || "",
+      lastEventChatterName: payload?.event?.chatter_user_name || "",
+      lastEventIgnoredReason: "",
+      lastCommandAcceptedAt: "",
+      lastCommandError: "",
+    });
+
     const command = parseAchievementCommand(text);
 
     if (!command) {
+      await updateTrackedChannelDiagnostics(trackedChannel.id, {
+        lastEventIgnoredReason: "command_not_matched",
+        lastEventIgnoredAt: new Date().toISOString(),
+      });
+
       return response.status(200).json({ ok: true, ignored: true });
     }
 
-    const sourceMessageId = payload?.event?.message_id || "";
-
     if (await hasProcessedSourceMessage(sourceMessageId)) {
+      await updateTrackedChannelDiagnostics(trackedChannel.id, {
+        lastEventIgnoredReason: "duplicate_message",
+        lastEventIgnoredAt: new Date().toISOString(),
+      });
+
       return response.status(200).json({
         ok: true,
         ignored: true,
@@ -298,13 +334,33 @@ export default async function handler(request, response) {
       });
     }
 
-    const result = await saveAchievementClaim(command, {
-      sourceMessageId,
-      chatterLogin: payload?.event?.chatter_user_login || "",
-      chatterName: payload?.event?.chatter_user_name || "",
-      broadcasterUserId,
-      broadcasterLogin,
-      submittedAt: payload?.event?.message?.sent_at || payload?.event?.created_at || "",
+    let result = null;
+
+    try {
+      result = await saveAchievementClaim(command, {
+        sourceMessageId,
+        chatterLogin: payload?.event?.chatter_user_login || "",
+        chatterName: payload?.event?.chatter_user_name || "",
+        broadcasterUserId,
+        broadcasterLogin,
+        submittedAt: payload?.event?.message?.sent_at || payload?.event?.created_at || "",
+      });
+    } catch (error) {
+      await updateTrackedChannelDiagnostics(trackedChannel.id, {
+        lastCommandError: error.message || "Не удалось сохранить команду.",
+        lastCommandErrorAt: new Date().toISOString(),
+      });
+      throw error;
+    }
+
+    await updateTrackedChannelDiagnostics(trackedChannel.id, {
+      lastCommandAcceptedAt: new Date().toISOString(),
+      lastCommandStatus: result?.status || "accepted",
+      lastCommandPlayerTag: command.playerTag,
+      lastCommandAchievementCode: Number(command.achievementCode || 0),
+      lastCommandError: "",
+      lastCommandErrorAt: "",
+      lastEventIgnoredReason: "",
     });
 
     await sendChatAcknowledgement({
