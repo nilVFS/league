@@ -1,5 +1,9 @@
 import crypto from "node:crypto";
-import { collectionNames, listCollection } from "../../_lib/content-store.js";
+import {
+  collectionNames,
+  createDocument,
+  listCollection,
+} from "../../_lib/content-store.js";
 import { parseAchievementCommand, saveAchievementClaim } from "../../_lib/ladder.js";
 import { sendTwitchChatMessage } from "../../_lib/twitch-eventsub.js";
 
@@ -55,6 +59,56 @@ function verifyEventsubSignature(request, rawBody) {
   const actualSignature = String(request.headers[MESSAGE_SIGNATURE_HEADER] || "");
 
   return timingSafeCompare(expectedSignature, actualSignature);
+}
+
+function getTrackedChannelId(channel) {
+  return String(channel.broadcasterUserId || "")
+    .trim()
+    .toLowerCase() || String(channel.broadcasterLogin || "").trim().toLowerCase();
+}
+
+function isExpectedChatSubscription(payload, broadcasterUserId) {
+  const botUserId = String(process.env.TWITCH_BOT_USER_ID || "").trim();
+  const condition = payload?.subscription?.condition || {};
+
+  return (
+    String(condition.broadcaster_user_id || "") === String(broadcasterUserId || "") &&
+    (!botUserId || String(condition.user_id || "") === botUserId)
+  );
+}
+
+async function findOrRecoverTrackedChannel({
+  payload,
+  broadcasterUserId,
+  broadcasterLogin,
+}) {
+  const trackedChannels = await listCollection(collectionNames.trackedChannels);
+  const trackedChannel = trackedChannels.find(
+    (channel) =>
+      String(channel.broadcasterUserId || "") === broadcasterUserId ||
+      String(channel.broadcasterLogin || "").toLowerCase() ===
+        broadcasterLogin.toLowerCase()
+  );
+
+  if (trackedChannel || !isExpectedChatSubscription(payload, broadcasterUserId)) {
+    return trackedChannel || null;
+  }
+
+  return createDocument(collectionNames.trackedChannels, {
+    id: getTrackedChannelId({
+      broadcasterUserId,
+      broadcasterLogin,
+    }),
+    broadcasterUserId,
+    broadcasterLogin,
+    displayName: String(payload?.event?.broadcaster_user_name || broadcasterLogin),
+    enabled: true,
+    subscriptionId: String(payload?.subscription?.id || ""),
+    subscriptionStatus: String(payload?.subscription?.status || ""),
+    lastSyncAt: new Date().toISOString(),
+    lastSyncError: "",
+    recoveredFromEventsubAt: new Date().toISOString(),
+  });
 }
 
 async function sendChatAcknowledgement({
@@ -119,13 +173,11 @@ export default async function handler(request, response) {
 
     const broadcasterUserId = String(payload?.event?.broadcaster_user_id || "");
     const broadcasterLogin = String(payload?.event?.broadcaster_user_login || "");
-    const trackedChannels = await listCollection(collectionNames.trackedChannels);
-    const trackedChannel = trackedChannels.find(
-      (channel) =>
-        String(channel.broadcasterUserId || "") === broadcasterUserId ||
-        String(channel.broadcasterLogin || "").toLowerCase() ===
-          broadcasterLogin.toLowerCase()
-    );
+    const trackedChannel = await findOrRecoverTrackedChannel({
+      payload,
+      broadcasterUserId,
+      broadcasterLogin,
+    });
 
     if (!trackedChannel || trackedChannel.enabled === false) {
       return response.status(200).json({ ok: true, ignored: true, reason: "channel_not_tracked" });
