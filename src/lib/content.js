@@ -76,8 +76,12 @@ export async function createDocument(name, payload) {
 }
 
 export async function updateDocument(name, id, payload) {
+  const searchParams = new URLSearchParams({
+    collection: name,
+    id,
+  });
   const response = await fetch(
-    buildApiUrl(`/api/content/${encodeURIComponent(name)}/${encodeURIComponent(id)}`),
+    buildApiUrl(`/api/content?${searchParams.toString()}`),
     {
       method: "PATCH",
       credentials: "include",
@@ -93,13 +97,14 @@ export async function updateDocument(name, id, payload) {
 }
 
 export async function deleteDocument(name, id) {
-  const response = await fetch(
-    buildApiUrl(`/api/content/${encodeURIComponent(name)}/${encodeURIComponent(id)}`),
-    {
-      method: "DELETE",
-      credentials: "include",
-    }
-  );
+  const searchParams = new URLSearchParams({
+    collection: name,
+    id,
+  });
+  const response = await fetch(buildApiUrl(`/api/content?${searchParams.toString()}`), {
+    method: "DELETE",
+    credentials: "include",
+  });
 
   await readJson(response, "Не удалось удалить запись.");
 }

@@ -41,7 +41,7 @@ function applyCors(request, response) {
   const allowedOrigins = getAllowedOrigins();
   const allowAnyOrigin = allowedOrigins.includes("*");
   const allowedOrigin = allowAnyOrigin
-    ? origin || "*"
+    ? origin
     : allowedOrigins.find((value) => value === origin) || "";
 
   if (allowedOrigin) {

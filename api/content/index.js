@@ -1,5 +1,10 @@
 import { requireAdmin } from "../_lib/admin-auth.js";
-import { createDocument, listCollection } from "../_lib/content-store.js";
+import {
+  createDocument,
+  deleteDocument,
+  listCollection,
+  updateDocument,
+} from "../_lib/content-store.js";
 import { getQueryParam, readJsonBody, sendJson } from "../_lib/http.js";
 
 function canReadCollection(name, isAdmin) {
@@ -35,6 +40,17 @@ export default async function handler(request, response) {
       return sendJson(response, 200, { items });
     }
 
+    if (request.method === "PATCH") {
+      if (!isAdmin) {
+        return sendJson(response, 401, { error: "Unauthorized" });
+      }
+
+      const documentId = getQueryParam(request, "id");
+      const payload = await readJsonBody(request);
+      const document = await updateDocument(collectionName, documentId, payload);
+      return sendJson(response, 200, { item: document });
+    }
+
     if (request.method === "POST") {
       if (!canCreateCollection(collectionName, isAdmin)) {
         return sendJson(response, 401, { error: "Unauthorized" });
@@ -45,7 +61,17 @@ export default async function handler(request, response) {
       return sendJson(response, 201, { item: document });
     }
 
-    response.setHeader("Allow", "GET, POST");
+    if (request.method === "DELETE") {
+      if (!isAdmin) {
+        return sendJson(response, 401, { error: "Unauthorized" });
+      }
+
+      const documentId = getQueryParam(request, "id");
+      await deleteDocument(collectionName, documentId);
+      return sendJson(response, 200, { ok: true });
+    }
+
+    response.setHeader("Allow", "GET, POST, PATCH, DELETE");
     return sendJson(response, 405, { error: "Method Not Allowed" });
   } catch (error) {
     console.error("[api/content] request failed", {
