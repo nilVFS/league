@@ -217,6 +217,18 @@ function LadderPage() {
         title="Таблица лидеров"
         titleAction={
           <div className="page-card__action-group page-card__action-group--ladder">
+            <button
+              className="admin-button"
+              onClick={() => {
+                setSubmitError("");
+                setSubmitSuccess("");
+                setIsClaimFormOpen(true);
+              }}
+              type="button"
+            >
+              Подать заявку
+            </button>
+
             <label className="page-search page-search--inline" htmlFor="ladder-search">
               <span className="sr-only">Поиск по игрокам</span>
               <span aria-hidden="true" className="page-search__icon">
@@ -230,18 +242,6 @@ function LadderPage() {
                 value={search}
               />
             </label>
-
-            <button
-              className="admin-button"
-              onClick={() => {
-                setSubmitError("");
-                setSubmitSuccess("");
-                setIsClaimFormOpen(true);
-              }}
-              type="button"
-            >
-              Подать заявку
-            </button>
           </div>
         }
       >
@@ -321,15 +321,11 @@ function LadderPage() {
 
             <div className="suggestion-modal__header">
               <h2 className="suggestion-modal__title">Заявка в ладдер</h2>
-              <p className="suggestion-modal__text">
-                Отправим ту же команду, что и через бота: ник игрока, номер
-                достижения и ссылку на пруф.
-              </p>
             </div>
 
             <form className="suggestion-form ladder-claim-form" onSubmit={handleClaimSubmit}>
               <label className="admin-field">
-                <span>Ник игрока</span>
+                <span>Тег аккаунта</span>
                 <input
                   onChange={(event) =>
                     setClaimForm((current) => ({
