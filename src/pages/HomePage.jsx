@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { homeHeroLines } from "../data/siteData";
 import useSectionSnap from "../hooks/useSectionSnap";
 import { extractTwitchChannelLogin, fetchTwitchChannelProfile, fetchTwitchLiveStatuses } from "../lib/twitch";
 import useCollectionData from "../hooks/useCollectionData";
 import { collectionNames } from "../lib/content";
+
+const privacyBannerStorageKey = "hotv_privacy_banner_accepted_v1";
 
 function HomePage() {
   const joinHref = "https://clck.ru/3TQG34";
@@ -25,6 +28,7 @@ function HomePage() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [heroVisible, setHeroVisible] = useState(false);
   const [ctaReady, setCtaReady] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(true);
   const activeHomeSections = [];
   const [visibleSections, setVisibleSections] = useState(() =>
     activeHomeSections.map(() => false)
@@ -206,12 +210,30 @@ function HomePage() {
   useSectionSnap(sectionRefs, activeIndex, setActiveIndex);
 
   useEffect(() => {
+    try {
+      setPrivacyAccepted(window.localStorage.getItem(privacyBannerStorageKey) === "true");
+    } catch {
+      setPrivacyAccepted(false);
+    }
+  }, []);
+
+  useEffect(() => {
     const timer = window.setTimeout(() => {
       setHeroVisible(true);
     }, 250);
 
     return () => window.clearTimeout(timer);
   }, []);
+
+  const acceptPrivacyBanner = () => {
+    setPrivacyAccepted(true);
+
+    try {
+      window.localStorage.setItem(privacyBannerStorageKey, "true");
+    } catch {
+      // Ignore storage errors and just hide for the current session.
+    }
+  };
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -434,6 +456,24 @@ function HomePage() {
           </section>
         ))}
       </div>
+
+      {!privacyAccepted ? (
+        <div className="legal-widget">
+          <div className="legal-widget__title">Персональные данные</div>
+          <div className="legal-widget__text">
+            На сайте есть формы и Twitch-интеграции. Перед использованием можно посмотреть
+            политику обработки данных.
+          </div>
+          <div className="legal-widget__actions">
+            <Link className="legal-widget__link" to="/privacy">
+              Открыть политику
+            </Link>
+            <button className="legal-widget__button" onClick={acceptPrivacyBanner} type="button">
+              Принять
+            </button>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

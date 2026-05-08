@@ -1506,6 +1506,20 @@ button {
   text-transform: uppercase;
 }
 
+.legal-widget__text {
+  margin-bottom: 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.legal-widget__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .legal-widget__link {
   color: var(--gold-bright);
   font-size: 14px;
@@ -1515,6 +1529,19 @@ button {
 .legal-widget__link:hover {
   text-decoration: underline;
   text-decoration-color: rgba(234, 215, 173, 0.45);
+}
+
+.legal-widget__button {
+  padding: 8px 12px;
+  border: 1px solid rgba(200, 166, 108, 0.22);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(128, 94, 48, 0.38), rgba(62, 42, 23, 0.88));
+  color: var(--gold-bright);
+  cursor: pointer;
+}
+
+.legal-widget__button:hover {
+  border-color: rgba(200, 166, 108, 0.38);
 }
 
 .legal-list {
