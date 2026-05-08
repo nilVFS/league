@@ -111,13 +111,27 @@ function AdminPage() {
   const [status, setStatus] = useState("");
   const [submitting, setSubmitting] = useState("");
 
-  const clipsState = useCollectionData(collectionNames.clips);
-  const participantsState = useCollectionData(collectionNames.participants);
-  const awardsState = useCollectionData(collectionNames.awards);
-  const ladderPlayersState = useCollectionData(collectionNames.ladderPlayers);
-  const achievementClaimsState = useCollectionData(collectionNames.achievementClaims);
-  const suggestionsState = useCollectionData(collectionNames.suggestions);
-  const trackedChannelsState = useCollectionData(collectionNames.trackedChannels);
+  const clipsState = useCollectionData(collectionNames.clips, {
+    enabled: activeTab === "clips",
+  });
+  const participantsState = useCollectionData(collectionNames.participants, {
+    enabled: activeTab === "participants",
+  });
+  const awardsState = useCollectionData(collectionNames.awards, {
+    enabled: activeTab === "awards" || activeTab === "ladder",
+  });
+  const ladderPlayersState = useCollectionData(collectionNames.ladderPlayers, {
+    enabled: activeTab === "ladder",
+  });
+  const achievementClaimsState = useCollectionData(collectionNames.achievementClaims, {
+    enabled: activeTab === "ladder",
+  });
+  const suggestionsState = useCollectionData(collectionNames.suggestions, {
+    enabled: activeTab === "requests",
+  });
+  const trackedChannelsState = useCollectionData(collectionNames.trackedChannels, {
+    enabled: activeTab === "bot",
+  });
 
   const refreshCollection = async (collectionName) => {
     const refreshByCollection = {

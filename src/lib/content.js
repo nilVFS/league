@@ -10,7 +10,7 @@ export const collectionNames = {
   trackedChannels: "trackedChannels",
 };
 
-const POLL_INTERVAL_MS = 15000;
+const POLL_INTERVAL_MS = 60000;
 
 async function readJson(response, fallbackMessage) {
   let payload = null;
@@ -36,10 +36,31 @@ export async function fetchCollection(name) {
   return payload.items || [];
 }
 
-export function subscribeToCollection(name, onData, onError) {
+function isDocumentVisible() {
+  if (typeof document === "undefined") {
+    return true;
+  }
+
+  return document.visibilityState === "visible";
+}
+
+export function subscribeToCollection(
+  name,
+  onData,
+  onError,
+  { enabled = true, pollIntervalMs = POLL_INTERVAL_MS } = {}
+) {
+  if (!enabled) {
+    return () => {};
+  }
+
   let stopped = false;
 
   const load = async () => {
+    if (!isDocumentVisible()) {
+      return;
+    }
+
     try {
       const items = await fetchCollection(name);
       if (!stopped) {
@@ -53,11 +74,24 @@ export function subscribeToCollection(name, onData, onError) {
   };
 
   load();
-  const intervalId = window.setInterval(load, POLL_INTERVAL_MS);
+  const intervalId = window.setInterval(load, pollIntervalMs);
+
+  const handleVisibilityChange = () => {
+    if (!stopped && isDocumentVisible()) {
+      void load();
+    }
+  };
+
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+  }
 
   return () => {
     stopped = true;
     window.clearInterval(intervalId);
+    if (typeof document !== "undefined") {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    }
   };
 }
 

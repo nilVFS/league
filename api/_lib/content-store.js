@@ -17,6 +17,20 @@ export const collectionNames = {
 
 const allowedCollections = new Set(Object.values(collectionNames));
 const YDB_TABLE_NAME = "content_items";
+const DEFAULT_COLLECTION_CACHE_TTL_MS = Number(
+  process.env.CONTENT_COLLECTION_CACHE_TTL_MS || 10000
+);
+const publicCollectionNames = new Set([
+  collectionNames.clips,
+  collectionNames.participants,
+  collectionNames.awards,
+]);
+const moderatedCollectionNames = new Set([
+  collectionNames.suggestions,
+  collectionNames.achievementClaims,
+  collectionNames.ladderPlayers,
+  collectionNames.trackedChannels,
+]);
 
 const defaultStore = {
   clips: [],
@@ -30,6 +44,8 @@ const defaultStore = {
 
 let driverPromise = null;
 let schemaPromise = null;
+const collectionCache = new Map();
+const pendingCollectionLoads = new Map();
 
 function getStorePath() {
   return process.env.CONTENT_STORE_PATH || path.join(process.cwd(), ".data", "content-store.json");
@@ -64,6 +80,77 @@ function compareByCreatedAtDesc(left, right) {
   const rightTime = Date.parse(right.createdAt || right.updatedAt || "") || 0;
 
   return rightTime - leftTime;
+}
+
+function cloneItems(items = []) {
+  return items.map((item) => ({ ...item }));
+}
+
+function getCollectionCacheTtlMs(name) {
+  if (publicCollectionNames.has(name)) {
+    return Number(process.env.CONTENT_PUBLIC_COLLECTION_CACHE_TTL_MS || 60000);
+  }
+
+  if (moderatedCollectionNames.has(name)) {
+    return Number(process.env.CONTENT_MUTABLE_COLLECTION_CACHE_TTL_MS || 15000);
+  }
+
+  return DEFAULT_COLLECTION_CACHE_TTL_MS;
+}
+
+function getCachedCollection(name) {
+  const entry = collectionCache.get(name);
+
+  if (!entry) {
+    return null;
+  }
+
+  if (entry.expiresAt <= Date.now()) {
+    collectionCache.delete(name);
+    return null;
+  }
+
+  return cloneItems(entry.items);
+}
+
+function setCachedCollection(name, items) {
+  const ttlMs = getCollectionCacheTtlMs(name);
+
+  if (ttlMs <= 0) {
+    collectionCache.delete(name);
+    return;
+  }
+
+  collectionCache.set(name, {
+    expiresAt: Date.now() + ttlMs,
+    items: cloneItems(items),
+  });
+}
+
+function invalidateCollectionCache(name) {
+  collectionCache.delete(name);
+  pendingCollectionLoads.delete(name);
+}
+
+async function loadCollectionAndCache(name, loader) {
+  const pendingLoad = pendingCollectionLoads.get(name);
+  if (pendingLoad) {
+    return cloneItems(await pendingLoad);
+  }
+
+  const loadPromise = (async () => {
+    const items = await loader();
+    setCachedCollection(name, items);
+    return cloneItems(items);
+  })();
+
+  pendingCollectionLoads.set(name, loadPromise);
+
+  try {
+    return cloneItems(await loadPromise);
+  } finally {
+    pendingCollectionLoads.delete(name);
+  }
 }
 
 function getDocumentIdCandidates(id) {
@@ -250,22 +337,49 @@ async function listCollectionFromYdb(name) {
     .sort(compareByCreatedAtDesc);
 }
 
-async function getDocumentFromYdb(name, id) {
-  const items = await listCollectionFromYdb(name);
-  const candidates = getDocumentIdCandidates(id);
-  const directMatch =
-    items.find(
-      (item) =>
-        candidates.includes(String(item.id || "")) ||
-        candidates.includes(String(item._storageId || ""))
-    ) || null;
+async function getDocumentByExactIdFromYdb(name, id) {
+  const value = String(id || "").trim();
 
-  if (directMatch) {
-    return directMatch;
+  if (!value) {
+    return null;
+  }
+
+  await ensureYdbSchema();
+  const { sql } = await getYdbSql();
+  const [rows = []] = await sql`
+    SELECT id, created_at, updated_at, data_json
+    FROM ${sql.identifier(YDB_TABLE_NAME)}
+    WHERE collection_name = ${name} AND id = ${value};
+  `;
+
+  const row = rows[0];
+  if (!row) {
+    return null;
+  }
+
+  const payload = JSON.parse(row.data_json || "{}");
+  return {
+    ...payload,
+    id: payload.id || row.id,
+    _storageId: row.id,
+    createdAt: payload.createdAt || row.created_at || "",
+    updatedAt: payload.updatedAt || row.updated_at || "",
+  };
+}
+
+async function getDocumentFromYdb(name, id) {
+  const candidates = getDocumentIdCandidates(id);
+
+  for (const candidateId of candidates) {
+    const document = await getDocumentByExactIdFromYdb(name, candidateId);
+    if (document) {
+      return document;
+    }
   }
 
   if (name === collectionNames.achievementClaims) {
     const identity = parseAchievementClaimIdentity(id);
+    const items = await listCollectionFromYdb(name);
     return items.find((item) => matchesAchievementClaimIdentity(item, identity)) || null;
   }
 
@@ -393,24 +507,52 @@ async function deleteDocumentFromFile(name, id) {
 
 export async function listCollection(name) {
   assertCollection(name);
-  if (isYdbConfigured()) {
-    return listCollectionFromYdb(name);
+  const cachedItems = getCachedCollection(name);
+
+  if (cachedItems) {
+    return cachedItems;
   }
 
-  return listCollectionFromFile(name);
+  return loadCollectionAndCache(
+    name,
+    isYdbConfigured()
+      ? () => listCollectionFromYdb(name)
+      : () => listCollectionFromFile(name)
+  );
 }
 
 export async function getCollectionCount(name) {
   assertCollection(name);
-  const items = await listCollection(name);
-  return items.length;
+
+  const cachedItems = getCachedCollection(name);
+  if (cachedItems) {
+    return cachedItems.length;
+  }
+
+  if (!isYdbConfigured()) {
+    const items = await listCollectionFromFile(name);
+    setCachedCollection(name, items);
+    return items.length;
+  }
+
+  await ensureYdbSchema();
+  const { sql } = await getYdbSql();
+  const [rows = []] = await sql`
+    SELECT COUNT(*) AS total
+    FROM ${sql.identifier(YDB_TABLE_NAME)}
+    WHERE collection_name = ${name};
+  `;
+
+  return Number(rows[0]?.total || 0);
 }
 
 export async function createDocument(name, payload) {
   assertCollection(name);
 
   if (!isYdbConfigured()) {
-    return createDocumentInFile(name, payload);
+    const document = await createDocumentInFile(name, payload);
+    invalidateCollectionCache(name);
+    return document;
   }
 
   const nowIso = new Date().toISOString();
@@ -424,6 +566,7 @@ export async function createDocument(name, payload) {
   document._storageId = document.id;
 
   await upsertDocumentToYdb(name, document);
+  invalidateCollectionCache(name);
   return document;
 }
 
@@ -431,7 +574,9 @@ export async function updateDocument(name, id, payload) {
   assertCollection(name);
 
   if (!isYdbConfigured()) {
-    return updateDocumentInFile(name, id, payload);
+    const document = await updateDocumentInFile(name, id, payload);
+    invalidateCollectionCache(name);
+    return document;
   }
 
   const current = await getDocumentFromYdb(name, id);
@@ -451,6 +596,7 @@ export async function updateDocument(name, id, payload) {
   };
 
   await upsertDocumentToYdb(name, next);
+  invalidateCollectionCache(name);
   return next;
 }
 
@@ -458,7 +604,9 @@ export async function deleteDocument(name, id) {
   assertCollection(name);
 
   if (!isYdbConfigured()) {
-    return deleteDocumentFromFile(name, id);
+    await deleteDocumentFromFile(name, id);
+    invalidateCollectionCache(name);
+    return;
   }
 
   const current = await getDocumentFromYdb(name, id);
@@ -469,4 +617,5 @@ export async function deleteDocument(name, id) {
   }
 
   await deleteDocumentFromYdb(name, current._storageId || current.id || id);
+  invalidateCollectionCache(name);
 }

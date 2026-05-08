@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { fetchCollection, subscribeToCollection } from "../lib/content";
 
-function useCollectionData(collectionName) {
+function useCollectionData(collectionName, options = {}) {
+  const { enabled = true, pollIntervalMs } = options;
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -21,6 +22,13 @@ function useCollectionData(collectionName) {
   }, [collectionName]);
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false);
+      return () => {};
+    }
+
+    setLoading(true);
+
     const unsubscribe = subscribeToCollection(
       collectionName,
       (data) => {
@@ -31,11 +39,12 @@ function useCollectionData(collectionName) {
       (err) => {
         setError(err.message || "Не удалось загрузить данные");
         setLoading(false);
-      }
+      },
+      { enabled, pollIntervalMs }
     );
 
     return () => unsubscribe();
-  }, [collectionName]);
+  }, [collectionName, enabled, pollIntervalMs]);
 
   return { items, loading, error, refresh };
 }
