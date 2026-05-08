@@ -1565,6 +1565,11 @@ button {
   text-decoration-color: rgba(234, 215, 173, 0.45);
 }
 
+body.modal-open .site-footer,
+body.modal-open .legal-widget {
+  display: none;
+}
+
 .legal-list {
   margin: 0;
   padding-left: 20px;
