@@ -13,7 +13,6 @@ const initialClipState = {
   description: "",
   clipSlug: "",
   thumbnailUrl: "",
-  contact: "",
   consentAccepted: false,
 };
 
@@ -23,7 +22,6 @@ const initialParticipantState = {
   href: "",
   imageUrl: "",
   description: "",
-  contact: "",
   consentAccepted: false,
 };
 
@@ -143,7 +141,6 @@ function SuggestionForm({ type }) {
           clipSlug,
           thumbnailUrl: clipForm.thumbnailUrl.trim(),
           broadcasterName,
-          contact: clipForm.contact.trim(),
           consentAccepted: clipForm.consentAccepted,
           consentAcceptedAt: new Date().toISOString(),
           privacyPolicyVersion,
@@ -165,7 +162,6 @@ function SuggestionForm({ type }) {
           type,
           status: "pending",
           ...participantPayload,
-          contact: participantForm.contact.trim(),
           consentAccepted: participantForm.consentAccepted,
           consentAcceptedAt: new Date().toISOString(),
           privacyPolicyVersion,
@@ -232,17 +228,6 @@ function SuggestionForm({ type }) {
                       required
                       type="text"
                       value={clipForm.clipSlug}
-                    />
-                  </label>
-                  <label className="admin-field">
-                    <span>Контакт для уточнений</span>
-                    <input
-                      onChange={(event) =>
-                        setClipForm((current) => ({ ...current, contact: event.target.value }))
-                      }
-                      placeholder="Telegram, Discord или email"
-                      type="text"
-                      value={clipForm.contact}
                     />
                   </label>
                 </>
@@ -316,20 +301,6 @@ function SuggestionForm({ type }) {
                       placeholder="Необязательно"
                       rows="3"
                       value={participantForm.description}
-                    />
-                  </label>
-                  <label className="admin-field">
-                    <span>Контакт для уточнений</span>
-                    <input
-                      onChange={(event) =>
-                        setParticipantForm((current) => ({
-                          ...current,
-                          contact: event.target.value,
-                        }))
-                      }
-                      placeholder="Telegram, Discord или email"
-                      type="text"
-                      value={participantForm.contact}
                     />
                   </label>
                 </>
