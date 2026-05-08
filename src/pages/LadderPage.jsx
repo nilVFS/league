@@ -342,7 +342,24 @@ function LadderPage() {
               </label>
 
               <label className="admin-field">
-                <span>Номер достижения</span>
+                <span>
+                  Номер достижения из{" "}
+                  <a
+                    href="https://docs.google.com/spreadsheets/d/1hnTlFLwf_wfy3xviqUAXE9yQ6bFbsgnOqHQo6_WBpas/edit?gid=0#gid=0"
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    таблицы
+                  </a>{" "}
+                  или со страницы{" "}
+                  <a
+                    href="https://league-hazel.vercel.app/awards"
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    награды
+                  </a>
+                </span>
                 <input
                   inputMode="numeric"
                   min="1"
@@ -360,7 +377,7 @@ function LadderPage() {
               </label>
 
               <label className="admin-field">
-                <span>Ссылка на пруф</span>
+                <span>Ссылка на пруф (клип/видео/скрин)</span>
                 <input
                   onChange={(event) =>
                     setClaimForm((current) => ({
