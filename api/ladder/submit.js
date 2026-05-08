@@ -7,6 +7,31 @@ function isAuthorized(request) {
     return true;
   }
 
+  const origin = String(request.headers.origin || "");
+  const referer = String(request.headers.referer || "");
+  const host =
+    String(request.headers["x-forwarded-host"] || request.headers.host || "").trim();
+
+  if (host) {
+    const normalizedHost = host.toLowerCase();
+
+    const matchesHost = (value) => {
+      if (!value) {
+        return false;
+      }
+
+      try {
+        return new URL(value).host.toLowerCase() === normalizedHost;
+      } catch {
+        return false;
+      }
+    };
+
+    if (matchesHost(origin) || matchesHost(referer)) {
+      return true;
+    }
+  }
+
   const authorization = request.headers.authorization || "";
   const bearerToken = authorization.startsWith("Bearer ")
     ? authorization.slice("Bearer ".length)

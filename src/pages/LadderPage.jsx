@@ -1,14 +1,46 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import LadderModal from "../components/LadderModal";
 import PageIntroCard from "../components/PageIntroCard";
 import useCollectionData from "../hooks/useCollectionData";
+import { buildApiUrl } from "../lib/api";
 import { collectionNames } from "../lib/content";
+
+const initialClaimForm = {
+  playerTag: "",
+  achievementCode: "",
+  proofUrl: "",
+};
 
 function LadderPage() {
   const awardsState = useCollectionData(collectionNames.awards);
   const claimsState = useCollectionData(collectionNames.achievementClaims);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [search, setSearch] = useState("");
+  const [isClaimFormOpen, setIsClaimFormOpen] = useState(false);
+  const [claimForm, setClaimForm] = useState(initialClaimForm);
+  const [submitError, setSubmitError] = useState("");
+  const [submitSuccess, setSubmitSuccess] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isClaimFormOpen) {
+      return undefined;
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setIsClaimFormOpen(false);
+      }
+    };
+
+    document.body.classList.add("modal-open");
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.classList.remove("modal-open");
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isClaimFormOpen]);
 
   const ladderRows = useMemo(() => {
     const achievementByCode = new Map(
@@ -115,6 +147,68 @@ function LadderPage() {
     );
   }, [ladderRows, search]);
 
+  const closeClaimForm = () => {
+    setIsClaimFormOpen(false);
+    setClaimForm(initialClaimForm);
+    setSubmitError("");
+  };
+
+  const handleClaimSubmit = async (event) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setSubmitError("");
+    setSubmitSuccess("");
+
+    try {
+      const playerTag = claimForm.playerTag.trim();
+      const achievementCode = claimForm.achievementCode.trim();
+      const proofUrl = claimForm.proofUrl.trim();
+      const commandText = proofUrl
+        ? `!выполнил ${playerTag} ${achievementCode} ${proofUrl}`
+        : `!выполнил ${playerTag} ${achievementCode}`;
+
+      const response = await fetch(buildApiUrl("/api/ladder/submit"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: commandText,
+          chatterLogin: "site",
+          chatterName: "site",
+          submittedAt: new Date().toISOString(),
+        }),
+      });
+
+      let payload = null;
+      try {
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+
+      if (!response.ok) {
+        throw new Error(payload?.error || "Не удалось отправить заявку в ладдер.");
+      }
+
+      setClaimForm(initialClaimForm);
+      setIsClaimFormOpen(false);
+      setSubmitSuccess(
+        payload?.status === "pending_moderation"
+          ? "Заявка отправлена на модерацию. Игрока пока нет в белом списке ладдера."
+          : "Заявка отправлена в ладдер."
+      );
+
+      if (payload?.status !== "pending_moderation") {
+        void claimsState.refresh();
+      }
+    } catch (error) {
+      setSubmitError(error.message || "Не удалось отправить заявку в ладдер.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <main className="inner-page">
       <PageIntroCard
@@ -122,21 +216,36 @@ function LadderPage() {
         eyebrow="Ладдер"
         title="Таблица лидеров"
         titleAction={
-          <label className="page-search page-search--inline" htmlFor="ladder-search">
-            <span className="sr-only">Поиск по игрокам</span>
-            <span aria-hidden="true" className="page-search__icon">
-              ⌕
-            </span>
-            <input
-              id="ladder-search"
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Поиск по игрокам"
-              type="search"
-              value={search}
-            />
-          </label>
+          <div className="page-card__action-group page-card__action-group--ladder">
+            <label className="page-search page-search--inline" htmlFor="ladder-search">
+              <span className="sr-only">Поиск по игрокам</span>
+              <span aria-hidden="true" className="page-search__icon">
+                ⌕
+              </span>
+              <input
+                id="ladder-search"
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Поиск по игрокам"
+                type="search"
+                value={search}
+              />
+            </label>
+
+            <button
+              className="admin-button"
+              onClick={() => {
+                setSubmitError("");
+                setSubmitSuccess("");
+                setIsClaimFormOpen(true);
+              }}
+              type="button"
+            >
+              Подать заявку
+            </button>
+          </div>
         }
       >
+        {submitSuccess ? <div className="state-box">{submitSuccess}</div> : null}
         {loading ? <div className="state-box">Загружаем ладдер...</div> : null}
         {error ? <div className="state-box state-box--error">{error}</div> : null}
 
@@ -187,6 +296,107 @@ function LadderPage() {
       </PageIntroCard>
 
       <LadderModal player={selectedPlayer} onClose={() => setSelectedPlayer(null)} />
+
+      {isClaimFormOpen ? (
+        <div
+          className="suggestion-modal"
+          onClick={(event) => {
+            if (event.target === event.currentTarget && !isSubmitting) {
+              closeClaimForm();
+            }
+          }}
+        >
+          <div className="suggestion-modal__dialog ladder-claim-modal">
+            <button
+              aria-label="Закрыть"
+              className="modal__close"
+              disabled={isSubmitting}
+              onClick={closeClaimForm}
+              type="button"
+            >
+              <span className="modal__close-icon" aria-hidden="true">
+                ×
+              </span>
+            </button>
+
+            <div className="suggestion-modal__header">
+              <h2 className="suggestion-modal__title">Заявка в ладдер</h2>
+              <p className="suggestion-modal__text">
+                Отправим ту же команду, что и через бота: ник игрока, номер
+                достижения и ссылку на пруф.
+              </p>
+            </div>
+
+            <form className="suggestion-form ladder-claim-form" onSubmit={handleClaimSubmit}>
+              <label className="admin-field">
+                <span>Ник игрока</span>
+                <input
+                  onChange={(event) =>
+                    setClaimForm((current) => ({
+                      ...current,
+                      playerTag: event.target.value,
+                    }))
+                  }
+                  pattern="^\S+#\d+$"
+                  placeholder="nick#1234"
+                  required
+                  type="text"
+                  value={claimForm.playerTag}
+                />
+              </label>
+
+              <label className="admin-field">
+                <span>Номер достижения</span>
+                <input
+                  inputMode="numeric"
+                  min="1"
+                  onChange={(event) =>
+                    setClaimForm((current) => ({
+                      ...current,
+                      achievementCode: event.target.value,
+                    }))
+                  }
+                  placeholder="Например, 12"
+                  required
+                  type="number"
+                  value={claimForm.achievementCode}
+                />
+              </label>
+
+              <label className="admin-field">
+                <span>Ссылка на пруф</span>
+                <input
+                  onChange={(event) =>
+                    setClaimForm((current) => ({
+                      ...current,
+                      proofUrl: event.target.value,
+                    }))
+                  }
+                  placeholder="https://..."
+                  type="url"
+                  value={claimForm.proofUrl}
+                />
+              </label>
+
+              {submitError ? <div className="state-box state-box--error">{submitError}</div> : null}
+
+              <div className="admin-actions">
+                <button className="admin-button" disabled={isSubmitting} type="submit">
+                  {isSubmitting ? "Отправляем..." : "Отправить заявку"}
+                </button>
+                <button
+                  className="admin-button admin-button--ghost"
+                  disabled={isSubmitting}
+                  onClick={closeClaimForm}
+                  type="button"
+                >
+                  Отмена
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

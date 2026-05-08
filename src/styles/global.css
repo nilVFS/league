@@ -1682,6 +1682,10 @@ button {
   background: rgba(28, 19, 11, 0.68);
 }
 
+.page-card__action-group--ladder {
+  align-items: stretch;
+}
+
 .ladder-table table {
   width: 100%;
   border-collapse: collapse;
@@ -1774,6 +1778,15 @@ button {
   margin-top: 6px;
   color: var(--text-muted);
   font-size: 13px;
+}
+
+.ladder-claim-modal {
+  width: min(620px, 100%);
+}
+
+.ladder-claim-form {
+  display: grid;
+  gap: 16px;
 }
 
 @keyframes pulse-line {
@@ -1926,6 +1939,10 @@ button {
   .page-search--inline {
     width: 100%;
     flex: 1 1 100%;
+  }
+
+  .page-card__action-group--ladder .admin-button {
+    width: 100%;
   }
 
   .tasks-table th + th,
