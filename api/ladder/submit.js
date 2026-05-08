@@ -9,6 +9,12 @@ export default async function handler(request, response) {
 
   try {
     const payload = await readJsonBody(request);
+    if (payload?.consentAccepted !== true) {
+      return sendJson(response, 422, {
+        error: "Нужно подтвердить согласие с политикой обработки персональных данных.",
+      });
+    }
+
     const text = String(payload.text || "").trim();
     const command = parseAchievementCommand(text);
 
@@ -26,6 +32,8 @@ export default async function handler(request, response) {
       broadcasterUserId: String(payload.broadcasterUserId || ""),
       broadcasterLogin: String(payload.broadcasterLogin || ""),
       submittedAt: String(payload.submittedAt || new Date().toISOString()),
+      consentAcceptedAt: String(payload.consentAcceptedAt || new Date().toISOString()),
+      privacyPolicyVersion: String(payload.privacyPolicyVersion || "2026-05-09"),
     });
 
     return sendJson(response, 200, { ok: true, ...result });

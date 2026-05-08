@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { collectionNames, createDocument } from "../lib/content";
 import {
   extractTwitchClipSlug,
@@ -13,6 +14,7 @@ const initialClipState = {
   clipSlug: "",
   thumbnailUrl: "",
   contact: "",
+  consentAccepted: false,
 };
 
 const initialParticipantState = {
@@ -22,7 +24,10 @@ const initialParticipantState = {
   imageUrl: "",
   description: "",
   contact: "",
+  consentAccepted: false,
 };
+
+const privacyPolicyVersion = "2026-05-09";
 
 function SuggestionForm({ type }) {
   const [open, setOpen] = useState(false);
@@ -139,6 +144,9 @@ function SuggestionForm({ type }) {
           thumbnailUrl: clipForm.thumbnailUrl.trim(),
           broadcasterName,
           contact: clipForm.contact.trim(),
+          consentAccepted: clipForm.consentAccepted,
+          consentAcceptedAt: new Date().toISOString(),
+          privacyPolicyVersion,
         });
       } else {
         const href = participantForm.href.trim();
@@ -158,6 +166,9 @@ function SuggestionForm({ type }) {
           status: "pending",
           ...participantPayload,
           contact: participantForm.contact.trim(),
+          consentAccepted: participantForm.consentAccepted,
+          consentAcceptedAt: new Date().toISOString(),
+          privacyPolicyVersion,
         });
       }
 
@@ -221,6 +232,17 @@ function SuggestionForm({ type }) {
                       required
                       type="text"
                       value={clipForm.clipSlug}
+                    />
+                  </label>
+                  <label className="admin-field">
+                    <span>Контакт для уточнений</span>
+                    <input
+                      onChange={(event) =>
+                        setClipForm((current) => ({ ...current, contact: event.target.value }))
+                      }
+                      placeholder="Telegram, Discord или email"
+                      type="text"
+                      value={clipForm.contact}
                     />
                   </label>
                 </>
@@ -296,8 +318,45 @@ function SuggestionForm({ type }) {
                       value={participantForm.description}
                     />
                   </label>
+                  <label className="admin-field">
+                    <span>Контакт для уточнений</span>
+                    <input
+                      onChange={(event) =>
+                        setParticipantForm((current) => ({
+                          ...current,
+                          contact: event.target.value,
+                        }))
+                      }
+                      placeholder="Telegram, Discord или email"
+                      type="text"
+                      value={participantForm.contact}
+                    />
+                  </label>
                 </>
               )}
+
+              <label className="consent-field">
+                <input
+                  checked={isClip ? clipForm.consentAccepted : participantForm.consentAccepted}
+                  onChange={(event) =>
+                    (isClip ? setClipForm : setParticipantForm)((current) => ({
+                      ...current,
+                      consentAccepted: event.target.checked,
+                    }))
+                  }
+                  required
+                  type="checkbox"
+                />
+                <span>
+                  Подтверждаю, что ознакомился с
+                  {" "}
+                  <Link className="consent-field__link" to="/privacy">
+                    политикой обработки персональных данных
+                  </Link>
+                  {" "}
+                  и согласен на обработку переданных мной данных.
+                </span>
+              </label>
 
               <div className="admin-actions">
                 <button className="admin-button" disabled={submitting} type="submit">

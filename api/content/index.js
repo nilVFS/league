@@ -7,6 +7,8 @@ import {
 } from "../_lib/content-store.js";
 import { getQueryParam, readJsonBody, sendJson } from "../_lib/http.js";
 
+const privacyPolicyVersion = "2026-05-09";
+
 function canReadCollection(name, isAdmin) {
   return !["suggestions", "trackedChannels", "ladderPlayers"].includes(name) || isAdmin;
 }
@@ -17,6 +19,38 @@ function canCreateCollection(name, isAdmin) {
   }
 
   return isAdmin;
+}
+
+function sanitizeAchievementClaimForPublic(item) {
+  return {
+    id: item.id,
+    playerTag: item.playerTag,
+    playerTagNormalized: item.playerTagNormalized,
+    achievementCode: item.achievementCode,
+    achievementTitle: item.achievementTitle,
+    achievementScore: item.achievementScore,
+    achievementBonusScore: item.achievementBonusScore,
+    proofUrl: item.proofUrl,
+    submittedAt: item.submittedAt,
+    status: item.status,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  };
+}
+
+function validatePublicSuggestionPayload(payload) {
+  if (payload?.consentAccepted !== true) {
+    const error = new Error("Нужно подтвердить согласие с политикой обработки персональных данных.");
+    error.statusCode = 422;
+    throw error;
+  }
+
+  return {
+    ...payload,
+    consentAccepted: true,
+    consentAcceptedAt: String(payload.consentAcceptedAt || new Date().toISOString()),
+    privacyPolicyVersion: String(payload.privacyPolicyVersion || privacyPolicyVersion),
+  };
 }
 
 export default async function handler(request, response) {
@@ -37,7 +71,11 @@ export default async function handler(request, response) {
       }
 
       const items = await listCollection(collectionName);
-      return sendJson(response, 200, { items });
+      const publicItems =
+        collectionName === "achievementClaims" && !isAdmin
+          ? items.map(sanitizeAchievementClaimForPublic)
+          : items;
+      return sendJson(response, 200, { items: publicItems });
     }
 
     if (request.method === "PATCH") {
@@ -56,7 +94,11 @@ export default async function handler(request, response) {
         return sendJson(response, 401, { error: "Unauthorized" });
       }
 
-      const payload = await readJsonBody(request);
+      const rawPayload = await readJsonBody(request);
+      const payload =
+        collectionName === "suggestions" && !isAdmin
+          ? validatePublicSuggestionPayload(rawPayload)
+          : rawPayload;
       const document = await createDocument(collectionName, payload);
       return sendJson(response, 201, { item: document });
     }

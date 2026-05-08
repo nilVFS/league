@@ -36,7 +36,7 @@ function getFrontendBaseUrl() {
   return firstAllowedOrigin;
 }
 
-function redirectToBot(response, params) {
+function redirectToFrontend(response, params) {
   const searchParams = new URLSearchParams();
 
   Object.entries(params).forEach(([key, value]) => {
@@ -47,8 +47,8 @@ function redirectToBot(response, params) {
 
   const frontendBaseUrl = getFrontendBaseUrl();
   const targetUrl = frontendBaseUrl
-    ? `${frontendBaseUrl}/bot?${searchParams.toString()}`
-    : `/bot?${searchParams.toString()}`;
+    ? `${frontendBaseUrl}/?${searchParams.toString()}`
+    : `/?${searchParams.toString()}`;
 
   return response.redirect(targetUrl);
 }
@@ -72,7 +72,7 @@ export default async function handler(request, response) {
     const errorDescription = String(request.query.error_description || "").trim();
 
     if (errorCode) {
-      return redirectToBot(response, {
+      return redirectToFrontend(response, {
         status: "error",
         step: state.kind,
         message: errorDescription || errorCode,
@@ -96,14 +96,14 @@ export default async function handler(request, response) {
       const configuredBotUserId = String(process.env.TWITCH_BOT_USER_ID || "").trim();
 
       if (configuredBotUserId && configuredBotUserId !== twitchUser.id) {
-        return redirectToBot(response, {
+        return redirectToFrontend(response, {
           status: "error",
           step: "bot",
           message: `Авторизован не тот бот. Ожидался user id ${configuredBotUserId}, а пришёл ${twitchUser.id}.`,
         });
       }
 
-      return redirectToBot(response, {
+      return redirectToFrontend(response, {
         status: "bot-connected",
         step: "bot",
         bot: twitchUser.login,
@@ -114,7 +114,7 @@ export default async function handler(request, response) {
       state.broadcasterLogin &&
       twitchUser.login.toLowerCase() !== state.broadcasterLogin.toLowerCase()
     ) {
-      return redirectToBot(response, {
+      return redirectToFrontend(response, {
         status: "error",
         step: "broadcaster",
         message: `Авторизован аккаунт ${twitchUser.login}, а ожидался ${state.broadcasterLogin}.`,
@@ -156,7 +156,7 @@ export default async function handler(request, response) {
       await createDocument(collectionNames.trackedChannels, channelPayload);
     }
 
-    return redirectToBot(response, {
+    return redirectToFrontend(response, {
       status: reused ? "already-connected" : "connected",
       step: "broadcaster",
       channel: twitchUser.login,
@@ -168,7 +168,7 @@ export default async function handler(request, response) {
       details: error.details || null,
     });
 
-    return redirectToBot(response, {
+    return redirectToFrontend(response, {
       status: "error",
       step: "callback",
       message: error.message || "Unknown Twitch auth callback error.",
