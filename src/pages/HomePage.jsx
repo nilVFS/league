@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import { homeHeroLines } from "../data/siteData";
 import useSectionSnap from "../hooks/useSectionSnap";
 import { extractTwitchChannelLogin, fetchTwitchChannelProfile, fetchTwitchLiveStatuses } from "../lib/twitch";
@@ -20,10 +19,6 @@ function HomePage() {
     {
       label: "Чат ТГ",
       href: "https://t.me/+J9-liq6gEh0xMWYy",
-    },
-    {
-      label: "Политика ПДн",
-      href: "/privacy",
     },
   ];
   const sectionRefs = useRef([]);
@@ -300,23 +295,17 @@ function HomePage() {
         className={`hero-links ${ctaReady ? "hero-links--visible" : ""}`}
         aria-label="Полезные ссылки"
       >
-        {heroLinks.map((link) =>
-          link.href.startsWith("/") ? (
-            <Link key={link.label} className="hero-links__item hero-links__item--legal" to={link.href}>
-              {link.label}
-            </Link>
-          ) : (
-            <a
-              key={link.label}
-              href={link.href}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="hero-links__item"
-            >
-              {link.label}
-            </a>
-          )
-        )}
+        {heroLinks.map((link) => (
+          <a
+            key={link.label}
+            href={link.href}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="hero-links__item"
+          >
+            {link.label}
+          </a>
+        ))}
       </div>
 
       {/* Список активных стримеров */}
@@ -411,14 +400,6 @@ function HomePage() {
             <div className="scroll-indicator__line" />
           </a>
 
-          <div className={`hero-legal ${ctaReady ? "hero-legal--visible" : ""}`}>
-            Отправляя заявки и подключая Twitch-канал, вы соглашаетесь с
-            {" "}
-            <Link className="hero-legal__link" to="/privacy">
-              политикой обработки персональных данных
-            </Link>
-            .
-          </div>
         </section>
 
         {/*

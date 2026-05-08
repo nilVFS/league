@@ -24,14 +24,6 @@ function Header({ compact = false }) {
           ))}
         </nav>
 
-        <NavLink
-          className={({ isActive }) =>
-            `site-header__legal-link ${isActive ? "site-header__legal-link--active" : ""}`
-          }
-          to="/privacy"
-        >
-          ПДн
-        </NavLink>
       </div>
     </header>
   );
