@@ -6,13 +6,13 @@ function PrivacyPolicyPage() {
   return (
     <main className="inner-page">
       <PageIntroCard
-        description="Политика действует для сайта Hate of the Vaal, его публичных форм, ладдера, админки и Twitch-интеграций. Перед публикацией в прод обязательно замени поля с реквизитами оператора на фактические данные."
+        description="Политика действует для сайта Hate of the Vaal, его публичных форм, ладдера, админки и Twitch-интеграций."
         eyebrow="Legal"
         title="Политика обработки персональных данных"
       >
         <div className="legal-card">
           <div className="legal-note">
-            Версия политики: {policyVersion}. Сведения для замены перед публикацией в прод:
+            Версия политики: {policyVersion}. Оператор:
             {" "}
             <strong>Низьев Владислав Филиппович</strong>,
             {" "}
