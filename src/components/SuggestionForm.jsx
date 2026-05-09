@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { collectionNames, createDocument } from "../lib/content";
 import {
@@ -40,6 +41,7 @@ function SuggestionForm({
 
   const isClip = type === "clip";
   const isParticipantLinkOnly = !isClip && participantMode === "linkOnly";
+  const canUsePortal = typeof document !== "undefined";
 
   useEffect(() => {
     if (!open) {
@@ -194,7 +196,8 @@ function SuggestionForm({
 
       {status ? <div className="state-box">{status}</div> : null}
 
-      {open ? (
+      {open && canUsePortal
+        ? createPortal(
         <div
           className="suggestion-modal"
           onClick={(event) => {
@@ -357,7 +360,10 @@ function SuggestionForm({
             </form>
           </div>
         </div>
-      ) : null}
+          ,
+          document.body
+        )
+        : null}
     </div>
   );
 }
