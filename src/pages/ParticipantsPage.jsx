@@ -145,7 +145,13 @@ function ParticipantsPage() {
         description="Легенды твича"
         eyebrow="Участники"
         title="Участники сообщества"
-        // titleAction={<SuggestionForm type="participant" />}
+        titleAction={
+          <SuggestionForm
+            participantMode="linkOnly"
+            triggerLabel="Подать заявку"
+            type="participant"
+          />
+        }
       >
         {loading ? <div className="state-box">Загружаем участников...</div> : null}
         {error ? <div className="state-box state-box--error">{error}</div> : null}

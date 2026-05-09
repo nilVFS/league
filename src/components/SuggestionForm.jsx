@@ -27,7 +27,11 @@ const initialParticipantState = {
 
 const privacyPolicyVersion = "2026-05-09";
 
-function SuggestionForm({ type }) {
+function SuggestionForm({
+  type,
+  triggerLabel = "Предложить",
+  participantMode = "full",
+}) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState("");
@@ -35,6 +39,7 @@ function SuggestionForm({ type }) {
   const [participantForm, setParticipantForm] = useState(initialParticipantState);
 
   const isClip = type === "clip";
+  const isParticipantLinkOnly = !isClip && participantMode === "linkOnly";
 
   useEffect(() => {
     if (!open) {
@@ -184,7 +189,7 @@ function SuggestionForm({ type }) {
         onClick={() => setOpen(true)}
         type="button"
       >
-        Предложить
+        {triggerLabel}
       </button>
 
       {status ? <div className="state-box">{status}</div> : null}
@@ -212,7 +217,11 @@ function SuggestionForm({ type }) {
 
             <div className="suggestion-modal__header">
               <h2 className="suggestion-modal__title">
-                {isClip ? "Предложить клип" : "Предложить участника"}
+                {isClip
+                  ? "Предложить клип"
+                  : isParticipantLinkOnly
+                    ? "Заявка на добавление стримера"
+                    : "Предложить участника"}
               </h2>
             </div>
 
@@ -234,34 +243,6 @@ function SuggestionForm({ type }) {
               ) : (
                 <>
                   <label className="admin-field">
-                    <span>Ник участника</span>
-                    <input
-                      onChange={(event) =>
-                        setParticipantForm((current) => ({
-                          ...current,
-                          name: event.target.value,
-                        }))
-                      }
-                      placeholder="Необязательно. Если пусто, подтянем из Twitch."
-                      type="text"
-                      value={participantForm.name}
-                    />
-                  </label>
-                  <label className="admin-field">
-                    <span>Подпись канала</span>
-                    <input
-                      onChange={(event) =>
-                        setParticipantForm((current) => ({
-                          ...current,
-                          channel: event.target.value,
-                        }))
-                      }
-                      placeholder="Необязательно. Если пусто, соберём из ссылки."
-                      type="text"
-                      value={participantForm.channel}
-                    />
-                  </label>
-                  <label className="admin-field">
                     <span>Ссылка на канал</span>
                     <input
                       onChange={(event) =>
@@ -275,34 +256,66 @@ function SuggestionForm({ type }) {
                       value={participantForm.href}
                     />
                   </label>
-                  <label className="admin-field">
-                    <span>Ссылка на изображение</span>
-                    <input
-                      onChange={(event) =>
-                        setParticipantForm((current) => ({
-                          ...current,
-                          imageUrl: event.target.value,
-                        }))
-                      }
-                      placeholder="Необязательно"
-                      type="url"
-                      value={participantForm.imageUrl}
-                    />
-                  </label>
-                  <label className="admin-field">
-                    <span>Описание</span>
-                    <textarea
-                      onChange={(event) =>
-                        setParticipantForm((current) => ({
-                          ...current,
-                          description: event.target.value,
-                        }))
-                      }
-                      placeholder="Необязательно"
-                      rows="3"
-                      value={participantForm.description}
-                    />
-                  </label>
+                  {isParticipantLinkOnly ? null : (
+                    <>
+                      <label className="admin-field">
+                        <span>Ник участника</span>
+                        <input
+                          onChange={(event) =>
+                            setParticipantForm((current) => ({
+                              ...current,
+                              name: event.target.value,
+                            }))
+                          }
+                          placeholder="Необязательно. Если пусто, подтянем из Twitch."
+                          type="text"
+                          value={participantForm.name}
+                        />
+                      </label>
+                      <label className="admin-field">
+                        <span>Подпись канала</span>
+                        <input
+                          onChange={(event) =>
+                            setParticipantForm((current) => ({
+                              ...current,
+                              channel: event.target.value,
+                            }))
+                          }
+                          placeholder="Необязательно. Если пусто, соберём из ссылки."
+                          type="text"
+                          value={participantForm.channel}
+                        />
+                      </label>
+                      <label className="admin-field">
+                        <span>Ссылка на изображение</span>
+                        <input
+                          onChange={(event) =>
+                            setParticipantForm((current) => ({
+                              ...current,
+                              imageUrl: event.target.value,
+                            }))
+                          }
+                          placeholder="Необязательно"
+                          type="url"
+                          value={participantForm.imageUrl}
+                        />
+                      </label>
+                      <label className="admin-field">
+                        <span>Описание</span>
+                        <textarea
+                          onChange={(event) =>
+                            setParticipantForm((current) => ({
+                              ...current,
+                              description: event.target.value,
+                            }))
+                          }
+                          placeholder="Необязательно"
+                          rows="3"
+                          value={participantForm.description}
+                        />
+                      </label>
+                    </>
+                  )}
                 </>
               )}
 
