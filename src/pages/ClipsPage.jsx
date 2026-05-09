@@ -10,6 +10,7 @@ import {
 } from "../lib/twitch";
 
 const NEW_CLIP_WINDOW_MS = 24 * 60 * 60 * 1000;
+const IMPORTED_CHANNEL_DESCRIPTION_PREFIX = "Автодобавлено с канала ";
 
 function getClipTimestampMs(value) {
   if (!value) {
@@ -26,6 +27,24 @@ function getClipTimestampMs(value) {
 
   const parsed = new Date(value).getTime();
   return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function resolveClipChannelName(clip) {
+  const broadcasterName = String(clip?.broadcasterName || "").trim();
+
+  if (broadcasterName) {
+    return broadcasterName;
+  }
+
+  const description = String(clip?.description || "").trim();
+  if (!description.startsWith(IMPORTED_CHANNEL_DESCRIPTION_PREFIX)) {
+    return "";
+  }
+
+  return description
+    .slice(IMPORTED_CHANNEL_DESCRIPTION_PREFIX.length)
+    .replace(/\.$/, "")
+    .trim();
 }
 
 function ClipsPage() {
@@ -56,7 +75,7 @@ function ClipsPage() {
     }
 
     return sortedClips.filter((clip) =>
-      [clip.title, clip.broadcasterName, clip.description, clip.clipSlug]
+      [clip.title, resolveClipChannelName(clip), clip.description, clip.clipSlug]
         .map((value) => String(value || "").toLowerCase())
         .some((value) => value.includes(query))
     );
@@ -140,6 +159,7 @@ function ClipsPage() {
                 const isNew =
                   createdAtMs &&
                   Date.now() - createdAtMs < NEW_CLIP_WINDOW_MS;
+                const channelName = resolveClipChannelName(clip);
 
                 return (
                   <article className="clip-card" key={clip.id} onClick={() => setSelectedClip(clip)}>
@@ -164,8 +184,8 @@ function ClipsPage() {
                       )}
                     </div>
                     <div className="clip-card__body">
-                      {clip.broadcasterName ? (
-                        <div className="clip-card__channel">{clip.broadcasterName}</div>
+                      {channelName ? (
+                        <div className="clip-card__channel">{channelName}</div>
                       ) : null}
                       <div className="clip-card__title">{clip.title}</div>
                     </div>
