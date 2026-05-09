@@ -946,10 +946,7 @@ function AdminPage() {
             <span className="page-card__eyebrow">Admin</span>
             <div className="admin-header__copy">
               <h1 className="admin-header__title">Панель управления</h1>
-              <p className="admin-header__description">
-                Разделы собраны в одном рабочем пространстве: слева навигация,
-                справа формы, списки и модерация без бесконечной прокрутки.
-              </p>
+              <p className="admin-header__description"></p>
             </div>
           </div>
 
