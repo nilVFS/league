@@ -1906,8 +1906,16 @@ body.modal-open .legal-widget {
   transition: background 0.2s ease;
 }
 
+.ladder-table tbody tr:nth-child(odd) {
+  background: rgba(34, 23, 13, 0.44);
+}
+
+.ladder-table tbody tr:nth-child(even) {
+  background: rgba(24, 16, 9, 0.3);
+}
+
 .ladder-table__row:hover {
-  background: rgba(87, 61, 31, 0.16);
+  background: rgba(87, 61, 31, 0.22);
 }
 
 .ladder-table__player {
