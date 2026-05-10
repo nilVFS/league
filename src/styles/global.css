@@ -1054,6 +1054,14 @@ button {
   background: rgba(87, 61, 31, 0.16);
 }
 
+.tasks-table--awards tbody tr:nth-child(odd) {
+  background: rgba(34, 23, 13, 0.44);
+}
+
+.tasks-table--awards tbody tr:nth-child(even) {
+  background: rgba(24, 16, 9, 0.3);
+}
+
 .tasks-table--awards th:nth-child(2),
 .tasks-table--awards td:nth-child(2),
 .tasks-table--awards th:nth-child(3),
