@@ -205,14 +205,14 @@ function LadderPage() {
   const filteredAwards = useMemo(() => {
     const query = normalizeAchievementText(claimForm.achievementQuery);
 
-    if (!query) {
+    if (!query || claimForm.achievementCode) {
       return [];
     }
 
     return sortedAwards.filter((award) =>
       buildAchievementOptionLabel(award).toLowerCase().includes(query)
     );
-  }, [claimForm.achievementQuery, sortedAwards]);
+  }, [claimForm.achievementCode, claimForm.achievementQuery, sortedAwards]);
 
   const closeClaimForm = () => {
     setIsClaimFormOpen(false);
