@@ -1080,7 +1080,7 @@ button {
 
 .tasks-table--awards th:last-child,
 .tasks-table--awards td:last-child {
-  text-align: left;
+  text-align: center;
 }
 
 .tasks-table__score {
