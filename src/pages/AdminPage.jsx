@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import PageIntroCard from "../components/PageIntroCard";
 import useCollectionData from "../hooks/useCollectionData";
-import { buildApiUrl } from "../lib/api";
 import { getAdminSession, loginAdmin, logoutAdmin } from "../lib/admin";
 import {
   collectionNames,
@@ -58,7 +57,6 @@ const adminTabs = [
   { id: "participants", label: "Участники" },
   { id: "awards", label: "Награды" },
   { id: "ladder", label: "Ладдер" },
-  { id: "bot", label: "Twitch bot" },
   { id: "requests", label: "Запросы" },
 ];
 
@@ -71,22 +69,6 @@ function normalizePlayerTag(value = "") {
 
 function getDocumentStorageId(item) {
   return item?._storageId || item?.id || "";
-}
-
-function formatJsonDetails(value) {
-  if (!value) {
-    return "";
-  }
-
-  if (typeof value === "string") {
-    return value;
-  }
-
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch {
-    return String(value);
-  }
 }
 
 function AdminPage() {
@@ -130,9 +112,6 @@ function AdminPage() {
   const suggestionsState = useCollectionData(collectionNames.suggestions, {
     enabled: activeTab === "requests",
   });
-  const trackedChannelsState = useCollectionData(collectionNames.trackedChannels, {
-    enabled: activeTab === "bot",
-  });
 
   const refreshCollection = async (collectionName) => {
     const refreshByCollection = {
@@ -142,7 +121,6 @@ function AdminPage() {
       [collectionNames.ladderPlayers]: ladderPlayersState.refresh,
       [collectionNames.achievementClaims]: achievementClaimsState.refresh,
       [collectionNames.suggestions]: suggestionsState.refresh,
-      [collectionNames.trackedChannels]: trackedChannelsState.refresh,
     };
 
     const refresh = refreshByCollection[collectionName];
@@ -871,34 +849,6 @@ function AdminPage() {
       setMessage("Запрос отклонён.");
     } catch (error) {
       setMessage(error.message || "Не удалось отклонить запрос.");
-    } finally {
-      setSubmitting("");
-    }
-  };
-
-  const handleDisableTwitchChat = async () => {
-    setSubmitting("disable-twitch-chat");
-    setMessage("");
-
-    try {
-      const response = await fetch(buildApiUrl("/api/twitch/eventsub/disable"), {
-        method: "POST",
-        credentials: "include",
-      });
-      const payload = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        throw new Error(payload?.error || "Не удалось полностью отключить Twitch-чат.");
-      }
-
-      await trackedChannelsState.refresh();
-      setMessage(
-        `Twitch-чат отключён. Снято подписок: ${
-          Array.isArray(payload?.removedSubscriptions) ? payload.removedSubscriptions.length : 0
-        }.`
-      );
-    } catch (error) {
-      setMessage(error.message || "Не удалось полностью отключить Twitch-чат.");
     } finally {
       setSubmitting("");
     }
@@ -1919,119 +1869,6 @@ function AdminPage() {
               </div>
             ) : null}
 
-            {activeTab === "bot" ? (
-              <div className="admin-pane">
-                <section className="admin-card">
-                  <h2>Подключённые Twitch-каналы</h2>
-                  <div className="admin-actions">
-                    <button
-                      className="admin-button admin-button--ghost"
-                      disabled={submitting === "disable-twitch-chat"}
-                      onClick={handleDisableTwitchChat}
-                      type="button"
-                    >
-                      {submitting === "disable-twitch-chat"
-                        ? "Отключаем..."
-                        : "Полностью отключить чат-команды"}
-                    </button>
-                  </div>
-                  {trackedChannelsState.error ? (
-                    <div className="state-box state-box--error">
-                      {trackedChannelsState.error}
-                    </div>
-                  ) : null}
-
-                  {trackedChannelsState.items.length ? (
-                    <div className="admin-card__content admin-card__content--scroll">
-                      <div className="admin-list">
-                        {trackedChannelsState.items.map((channel) => {
-                          const details = formatJsonDetails(channel.lastChatErrorDetails);
-
-                          return (
-                            <div className="admin-list__item" key={channel.id}>
-                              <div className="admin-list__body">
-                                <strong>
-                                  {channel.displayName ||
-                                    channel.broadcasterLogin ||
-                                    channel.broadcasterUserId}
-                                </strong>
-                                <div className="admin-list__meta">
-                                  @{channel.broadcasterLogin || "unknown"} • id{" "}
-                                  {channel.broadcasterUserId || "unknown"}
-                                </div>
-                                <div className="admin-list__meta">
-                                  Подписка: {channel.subscriptionStatus || "unknown"}
-                                  {channel.enabled === false ? " • отключён" : " • включён"}
-                                </div>
-                                {channel.lastEventAt ? (
-                                  <div className="admin-list__meta">
-                                    Последний chat event: {channel.lastEventAt}
-                                    {channel.lastEventChatterLogin
-                                      ? ` • ${channel.lastEventChatterLogin}`
-                                      : ""}
-                                  </div>
-                                ) : null}
-                                {channel.lastEventText ? (
-                                  <div className="admin-list__meta">
-                                    Текст: {channel.lastEventText}
-                                  </div>
-                                ) : null}
-                                {channel.lastEventIgnoredReason ? (
-                                  <div className="admin-list__meta admin-list__meta--error">
-                                    Игнор: {channel.lastEventIgnoredReason}
-                                  </div>
-                                ) : null}
-                                {channel.lastCommandAcceptedAt ? (
-                                  <div className="admin-list__meta">
-                                    Команда принята: {channel.lastCommandAcceptedAt}
-                                    {channel.lastCommandStatus
-                                      ? ` • ${channel.lastCommandStatus}`
-                                      : ""}
-                                  </div>
-                                ) : null}
-                                {channel.lastCommandError ? (
-                                  <div className="admin-list__meta admin-list__meta--error">
-                                    Ошибка команды: {channel.lastCommandError}
-                                  </div>
-                                ) : null}
-                                {channel.lastChatSentAt ? (
-                                  <div className="admin-list__meta">
-                                    Последний ответ в чат: {channel.lastChatSentAt}
-                                    {channel.lastChatSentMode
-                                      ? ` • ${channel.lastChatSentMode}`
-                                      : ""}
-                                  </div>
-                                ) : null}
-                                {channel.lastChatSkippedAt ? (
-                                  <div className="admin-list__meta">
-                                    Пропущен ответ: {channel.lastChatSkippedAt}
-                                    {channel.lastChatSkippedReason
-                                      ? ` • ${channel.lastChatSkippedReason}`
-                                      : ""}
-                                  </div>
-                                ) : null}
-                                {channel.lastChatError ? (
-                                  <div className="admin-list__meta admin-list__meta--error">
-                                    Ошибка чата: {channel.lastChatError}
-                                  </div>
-                                ) : null}
-                                {details ? (
-                                  <pre className="admin-debug">{details}</pre>
-                                ) : null}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="state-box">
-                      Пока нет подключённых каналов. После OAuth или первого EventSub они появятся здесь.
-                    </div>
-                  )}
-                </section>
-              </div>
-            ) : null}
           </section>
         </div>
       </section>

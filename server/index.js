@@ -6,13 +6,8 @@ import contentDocumentHandler from "../api/content/[collection]/[id].js";
 import contentIndexHandler from "../api/content/index.js";
 import importClipsHandler from "../api/cron/import-clips.js";
 import ladderSubmitHandler from "../api/ladder/submit.js";
-import twitchAuthCallbackHandler from "../api/twitch/auth/callback.js";
-import twitchAuthStartHandler from "../api/twitch/auth/start.js";
 import twitchChannelProfileHandler from "../api/twitch/channel-profile.js";
 import twitchClipThumbnailHandler from "../api/twitch/clip-thumbnail.js";
-import twitchEventsubChatHandler from "../api/twitch/eventsub/chat.js";
-import twitchEventsubDisableHandler from "../api/twitch/eventsub/disable.js";
-import twitchEventsubRegisterHandler from "../api/twitch/eventsub/register.js";
 import twitchLiveStatusHandler from "../api/twitch/live-status.js";
 
 function isTimerImportRequest(pathname, method, body) {
@@ -168,16 +163,6 @@ function matchRoute(pathname) {
       params: [],
     },
     {
-      pattern: /^\/api\/twitch\/auth\/callback\/?$/,
-      handler: twitchAuthCallbackHandler,
-      params: [],
-    },
-    {
-      pattern: /^\/api\/twitch\/auth\/start\/?$/,
-      handler: twitchAuthStartHandler,
-      params: [],
-    },
-    {
       pattern: /^\/api\/twitch\/channel-profile\/?$/,
       handler: twitchChannelProfileHandler,
       params: [],
@@ -185,21 +170,6 @@ function matchRoute(pathname) {
     {
       pattern: /^\/api\/twitch\/clip-thumbnail\/?$/,
       handler: twitchClipThumbnailHandler,
-      params: [],
-    },
-    {
-      pattern: /^\/api\/twitch\/eventsub\/chat\/?$/,
-      handler: twitchEventsubChatHandler,
-      params: [],
-    },
-    {
-      pattern: /^\/api\/twitch\/eventsub\/disable\/?$/,
-      handler: twitchEventsubDisableHandler,
-      params: [],
-    },
-    {
-      pattern: /^\/api\/twitch\/eventsub\/register\/?$/,
-      handler: twitchEventsubRegisterHandler,
       params: [],
     },
     {
