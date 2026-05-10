@@ -7,6 +7,7 @@ import {
 } from "../../_lib/content-store.js";
 import { readJsonBody, sendJson } from "../../_lib/http.js";
 import {
+  assertChatEventsubEnabled,
   createOrReuseChatMessageSubscription,
   findTwitchUserByLogin,
   getTwitchAppAccessToken,
@@ -36,6 +37,7 @@ export default async function handler(request, response) {
 
   try {
     requireAdmin(request);
+    assertChatEventsubEnabled();
 
     const payload = await readJsonBody(request);
     const broadcasterLogin = String(payload.broadcasterLogin || "")

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import PageIntroCard from "../components/PageIntroCard";
 import useCollectionData from "../hooks/useCollectionData";
+import { buildApiUrl } from "../lib/api";
 import { getAdminSession, loginAdmin, logoutAdmin } from "../lib/admin";
 import {
   collectionNames,
@@ -870,6 +871,34 @@ function AdminPage() {
       setMessage("Запрос отклонён.");
     } catch (error) {
       setMessage(error.message || "Не удалось отклонить запрос.");
+    } finally {
+      setSubmitting("");
+    }
+  };
+
+  const handleDisableTwitchChat = async () => {
+    setSubmitting("disable-twitch-chat");
+    setMessage("");
+
+    try {
+      const response = await fetch(buildApiUrl("/api/twitch/eventsub/disable"), {
+        method: "POST",
+        credentials: "include",
+      });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(payload?.error || "Не удалось полностью отключить Twitch-чат.");
+      }
+
+      await trackedChannelsState.refresh();
+      setMessage(
+        `Twitch-чат отключён. Снято подписок: ${
+          Array.isArray(payload?.removedSubscriptions) ? payload.removedSubscriptions.length : 0
+        }.`
+      );
+    } catch (error) {
+      setMessage(error.message || "Не удалось полностью отключить Twitch-чат.");
     } finally {
       setSubmitting("");
     }
@@ -1894,6 +1923,18 @@ function AdminPage() {
               <div className="admin-pane">
                 <section className="admin-card">
                   <h2>Подключённые Twitch-каналы</h2>
+                  <div className="admin-actions">
+                    <button
+                      className="admin-button admin-button--ghost"
+                      disabled={submitting === "disable-twitch-chat"}
+                      onClick={handleDisableTwitchChat}
+                      type="button"
+                    >
+                      {submitting === "disable-twitch-chat"
+                        ? "Отключаем..."
+                        : "Полностью отключить чат-команды"}
+                    </button>
+                  </div>
                   {trackedChannelsState.error ? (
                     <div className="state-box state-box--error">
                       {trackedChannelsState.error}

@@ -1,5 +1,8 @@
 import { createOauthStateToken } from "../../_lib/twitch-oauth-state.js";
-import { createTwitchAuthorizeUrl } from "../../_lib/twitch-eventsub.js";
+import {
+  assertChatEventsubEnabled,
+  createTwitchAuthorizeUrl,
+} from "../../_lib/twitch-eventsub.js";
 
 function getBaseUrl(request) {
   const protoHeader = String(request.headers["x-forwarded-proto"] || "").split(",")[0].trim();
@@ -18,6 +21,8 @@ export default async function handler(request, response) {
   }
 
   try {
+    assertChatEventsubEnabled();
+
     const kind = String(request.query.kind || "broadcaster").trim().toLowerCase();
     const broadcasterLogin = String(request.query.broadcasterLogin || "")
       .trim()

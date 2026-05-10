@@ -6,6 +6,7 @@ import {
 } from "../../_lib/content-store.js";
 import { parseOauthStateToken } from "../../_lib/twitch-oauth-state.js";
 import {
+  assertChatEventsubEnabled,
   createOrReuseChatMessageSubscription,
   exchangeAuthorizationCode,
   getTwitchUserFromAccessToken,
@@ -66,6 +67,8 @@ export default async function handler(request, response) {
   }
 
   try {
+    assertChatEventsubEnabled();
+
     const state = parseOauthStateToken(String(request.query.state || ""));
     const code = String(request.query.code || "").trim();
     const errorCode = String(request.query.error || "").trim();

@@ -1,6 +1,7 @@
 const TWITCH_OAUTH_URL = "https://id.twitch.tv/oauth2/token";
 const TWITCH_AUTHORIZE_URL = "https://id.twitch.tv/oauth2/authorize";
 const TWITCH_API_BASE_URL = "https://api.twitch.tv/helix";
+export const CHAT_EVENTSUB_ENABLED = false;
 
 function getRequiredEnv(name) {
   const value = String(process.env[name] || "").trim();
@@ -199,6 +200,40 @@ async function deleteEventsubSubscription(subscriptionId, accessToken) {
       method: "DELETE",
     }
   );
+}
+
+export function assertChatEventsubEnabled() {
+  if (CHAT_EVENTSUB_ENABLED) {
+    return;
+  }
+
+  const error = new Error("Чат-команды Twitch отключены в проекте.");
+  error.statusCode = 410;
+  throw error;
+}
+
+export async function deleteAllChatMessageSubscriptions() {
+  const { botUserId } = getTwitchConfig();
+  const accessToken = await getTwitchAppAccessToken();
+  const subscriptions = await listEventsubSubscriptions(accessToken);
+  const chatSubscriptions = subscriptions.filter(
+    (subscription) =>
+      subscription?.type === "channel.chat.message" &&
+      String(subscription?.condition?.user_id || "") === String(botUserId)
+  );
+
+  await Promise.all(
+    chatSubscriptions.map((subscription) =>
+      deleteEventsubSubscription(subscription?.id, accessToken)
+    )
+  );
+
+  return chatSubscriptions.map((subscription) => ({
+    id: String(subscription?.id || ""),
+    broadcasterUserId: String(subscription?.condition?.broadcaster_user_id || ""),
+    userId: String(subscription?.condition?.user_id || ""),
+    status: String(subscription?.status || ""),
+  }));
 }
 
 export async function createOrReuseChatMessageSubscription({

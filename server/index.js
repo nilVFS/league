@@ -11,6 +11,7 @@ import twitchAuthStartHandler from "../api/twitch/auth/start.js";
 import twitchChannelProfileHandler from "../api/twitch/channel-profile.js";
 import twitchClipThumbnailHandler from "../api/twitch/clip-thumbnail.js";
 import twitchEventsubChatHandler from "../api/twitch/eventsub/chat.js";
+import twitchEventsubDisableHandler from "../api/twitch/eventsub/disable.js";
 import twitchEventsubRegisterHandler from "../api/twitch/eventsub/register.js";
 import twitchLiveStatusHandler from "../api/twitch/live-status.js";
 
@@ -189,6 +190,11 @@ function matchRoute(pathname) {
     {
       pattern: /^\/api\/twitch\/eventsub\/chat\/?$/,
       handler: twitchEventsubChatHandler,
+      params: [],
+    },
+    {
+      pattern: /^\/api\/twitch\/eventsub\/disable\/?$/,
+      handler: twitchEventsubDisableHandler,
       params: [],
     },
     {

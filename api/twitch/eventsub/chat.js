@@ -6,7 +6,10 @@ import {
   updateDocument,
 } from "../../_lib/content-store.js";
 import { parseAchievementCommand, saveAchievementClaim } from "../../_lib/ladder.js";
-import { sendTwitchChatMessage } from "../../_lib/twitch-eventsub.js";
+import {
+  CHAT_EVENTSUB_ENABLED,
+  sendTwitchChatMessage,
+} from "../../_lib/twitch-eventsub.js";
 
 const MESSAGE_ID_HEADER = "twitch-eventsub-message-id";
 const MESSAGE_TIMESTAMP_HEADER = "twitch-eventsub-message-timestamp";
@@ -254,6 +257,10 @@ export default async function handler(request, response) {
   if (request.method !== "POST") {
     response.setHeader("Allow", "POST");
     return response.status(405).json({ error: "Method Not Allowed" });
+  }
+
+  if (!CHAT_EVENTSUB_ENABLED) {
+    return response.status(204).end();
   }
 
   const rawBody = await readRawBody(request);
