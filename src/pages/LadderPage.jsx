@@ -14,6 +14,7 @@ const initialClaimForm = {
 };
 
 const privacyPolicyVersion = "2026-05-09";
+const SINGLE_USE_AWARD_CODES = new Set([1]);
 
 function LadderPage() {
   const awardsState = useCollectionData(collectionNames.awards);
@@ -151,6 +152,23 @@ function LadderPage() {
     );
   }, [ladderRows, search]);
 
+  const unavailableSingleUseAwardCodes = useMemo(() => {
+    const acceptedClaims = claimsState.items.filter(
+      (claim) => !claim.status || claim.status === "accepted"
+    );
+
+    return new Set(
+      acceptedClaims
+        .map((claim) => Number(claim.achievementCode))
+        .filter((code) => SINGLE_USE_AWARD_CODES.has(code))
+    );
+  }, [claimsState.items]);
+
+  const sortedAwards = useMemo(
+    () => [...awardsState.items].sort((left, right) => Number(left.code) - Number(right.code)),
+    [awardsState.items]
+  );
+
   const closeClaimForm = () => {
     setIsClaimFormOpen(false);
     setClaimForm(initialClaimForm);
@@ -167,6 +185,12 @@ function LadderPage() {
       const playerTag = claimForm.playerTag.trim();
       const achievementCode = claimForm.achievementCode.trim();
       const proofUrl = claimForm.proofUrl.trim();
+      const achievementCodeNumber = Number(achievementCode);
+
+      if (unavailableSingleUseAwardCodes.has(achievementCodeNumber)) {
+        throw new Error("Достижение #1 уже выполнено и больше недоступно для выбора.");
+      }
+
       const commandText = proofUrl
         ? `!выполнил ${playerTag} ${achievementCode} ${proofUrl}`
         : `!выполнил ${playerTag} ${achievementCode}`;
@@ -367,20 +391,29 @@ function LadderPage() {
                     награды
                   </a>
                 </span>
-                <input
-                  inputMode="numeric"
-                  min="1"
+                <select
                   onChange={(event) =>
                     setClaimForm((current) => ({
                       ...current,
                       achievementCode: event.target.value,
                     }))
                   }
-                  placeholder="Например, 12"
                   required
-                  type="number"
                   value={claimForm.achievementCode}
-                />
+                >
+                  <option value="">Выбери достижение</option>
+                  {sortedAwards.map((award) => {
+                    const code = Number(award.code);
+                    const isUnavailable = unavailableSingleUseAwardCodes.has(code);
+
+                    return (
+                      <option disabled={isUnavailable} key={award.id || award.code} value={code}>
+                        #{code} {award.title}
+                        {isUnavailable ? " — уже выполнено" : ""}
+                      </option>
+                    );
+                  })}
+                </select>
               </label>
 
               <label className="admin-field">
