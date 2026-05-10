@@ -1062,6 +1062,10 @@ button {
   background: rgba(24, 16, 9, 0.3);
 }
 
+.tasks-table--awards tbody tr:hover {
+  background: rgba(87, 61, 31, 0.22);
+}
+
 .tasks-table--awards th:nth-child(2),
 .tasks-table--awards td:nth-child(2),
 .tasks-table--awards th:nth-child(3),
