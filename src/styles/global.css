@@ -1953,6 +1953,39 @@ body.modal-open .legal-widget {
   gap: 16px;
 }
 
+.ladder-claim-suggestions {
+  display: grid;
+  gap: 8px;
+  max-height: 220px;
+  margin-top: 10px;
+  overflow-y: auto;
+}
+
+.ladder-claim-suggestion {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(200, 166, 108, 0.14);
+  border-radius: 14px;
+  background: rgba(17, 11, 6, 0.48);
+  color: var(--text-main);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.ladder-claim-suggestion:hover {
+  transform: translateY(-1px);
+  border-color: rgba(200, 166, 108, 0.28);
+  background: rgba(74, 52, 28, 0.36);
+}
+
+.ladder-claim-suggestion--disabled,
+.ladder-claim-suggestion:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
 @keyframes pulse-line {
   0%,
   100% {

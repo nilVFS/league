@@ -9,12 +9,46 @@ import { collectionNames } from "../lib/content";
 const initialClaimForm = {
   playerTag: "",
   achievementCode: "",
+  achievementQuery: "",
   proofUrl: "",
   consentAccepted: false,
 };
 
 const privacyPolicyVersion = "2026-05-09";
 const SINGLE_USE_AWARD_CODES = new Set([1]);
+
+function normalizeAchievementText(value = "") {
+  return String(value).trim().toLowerCase();
+}
+
+function buildAchievementOptionLabel(award) {
+  return `#${award.code} ${award.title || ""}`.trim();
+}
+
+function resolveAchievementCodeFromInput(value, awards) {
+  const trimmedValue = String(value || "").trim();
+
+  if (!trimmedValue) {
+    return null;
+  }
+
+  const directCodeMatch = trimmedValue.match(/^#?(\d+)$/);
+  if (directCodeMatch) {
+    return Number(directCodeMatch[1]);
+  }
+
+  const prefixedCodeMatch = trimmedValue.match(/^#?(\d+)\s+/);
+  if (prefixedCodeMatch) {
+    return Number(prefixedCodeMatch[1]);
+  }
+
+  const normalizedQuery = normalizeAchievementText(trimmedValue);
+  const matches = awards.filter((award) =>
+    buildAchievementOptionLabel(award).toLowerCase().includes(normalizedQuery)
+  );
+
+  return matches.length === 1 ? Number(matches[0].code) : null;
+}
 
 function LadderPage() {
   const awardsState = useCollectionData(collectionNames.awards);
@@ -168,6 +202,17 @@ function LadderPage() {
     () => [...awardsState.items].sort((left, right) => Number(left.code) - Number(right.code)),
     [awardsState.items]
   );
+  const filteredAwards = useMemo(() => {
+    const query = normalizeAchievementText(claimForm.achievementQuery);
+
+    if (!query) {
+      return sortedAwards;
+    }
+
+    return sortedAwards.filter((award) =>
+      buildAchievementOptionLabel(award).toLowerCase().includes(query)
+    );
+  }, [claimForm.achievementQuery, sortedAwards]);
 
   const closeClaimForm = () => {
     setIsClaimFormOpen(false);
@@ -183,9 +228,15 @@ function LadderPage() {
 
     try {
       const playerTag = claimForm.playerTag.trim();
-      const achievementCode = claimForm.achievementCode.trim();
+      const achievementCode =
+        claimForm.achievementCode.trim() ||
+        String(resolveAchievementCodeFromInput(claimForm.achievementQuery, sortedAwards) || "");
       const proofUrl = claimForm.proofUrl.trim();
       const achievementCodeNumber = Number(achievementCode);
+
+      if (!achievementCode) {
+        throw new Error("Выбери достижение из подсказок или укажи его номер.");
+      }
 
       if (unavailableSingleUseAwardCodes.has(achievementCodeNumber)) {
         throw new Error("Достижение #1 уже выполнено и больше недоступно для выбора.");
@@ -391,29 +442,50 @@ function LadderPage() {
                     награды
                   </a>
                 </span>
-                <select
+                <input
+                  autoComplete="off"
                   onChange={(event) =>
                     setClaimForm((current) => ({
                       ...current,
-                      achievementCode: event.target.value,
+                      achievementCode: "",
+                      achievementQuery: event.target.value,
                     }))
                   }
+                  placeholder="Например, 1 или часть названия награды"
                   required
-                  value={claimForm.achievementCode}
-                >
-                  <option value="">Выбери достижение</option>
-                  {sortedAwards.map((award) => {
-                    const code = Number(award.code);
-                    const isUnavailable = unavailableSingleUseAwardCodes.has(code);
+                  type="text"
+                  value={claimForm.achievementQuery}
+                />
 
-                    return (
-                      <option disabled={isUnavailable} key={award.id || award.code} value={code}>
-                        #{code} {award.title}
-                        {isUnavailable ? " — уже выполнено" : ""}
-                      </option>
-                    );
-                  })}
-                </select>
+                {filteredAwards.length ? (
+                  <div className="ladder-claim-suggestions">
+                    {filteredAwards.slice(0, 8).map((award) => {
+                      const code = Number(award.code);
+                      const isUnavailable = unavailableSingleUseAwardCodes.has(code);
+
+                      return (
+                        <button
+                          className={`ladder-claim-suggestion${
+                            isUnavailable ? " ladder-claim-suggestion--disabled" : ""
+                          }`}
+                          disabled={isUnavailable}
+                          key={award.id || award.code}
+                          onClick={() =>
+                            setClaimForm((current) => ({
+                              ...current,
+                              achievementCode: String(code),
+                              achievementQuery: buildAchievementOptionLabel(award),
+                            }))
+                          }
+                          type="button"
+                        >
+                          {buildAchievementOptionLabel(award)}
+                          {isUnavailable ? " — уже выполнено" : ""}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
               </label>
 
               <label className="admin-field">
