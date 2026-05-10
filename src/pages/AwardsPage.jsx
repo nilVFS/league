@@ -32,8 +32,8 @@ function AwardsPage() {
   return (
     <main className="inner-page">
       <PageIntroCard
-        eyebrow="Награды"
-        title="Цели и баллы"
+        eyebrow="Цели и баллы"
+        title=""
         titleAction={
           <label className="page-search page-search--inline" htmlFor="awards-search">
             <span className="sr-only">Поиск по целям</span>
