@@ -15,7 +15,7 @@ const initialClaimForm = {
 };
 
 const privacyPolicyVersion = "2026-05-09";
-const SINGLE_USE_AWARD_CODES = new Set([1, 64, 65]);
+const SINGLE_USE_AWARD_CODES = new Set([1, 64, 65, 66]);
 
 function normalizeAchievementText(value = "") {
   return String(value).trim().toLowerCase();

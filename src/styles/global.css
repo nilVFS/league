@@ -1061,6 +1061,16 @@ button {
   text-align: left;
 }
 
+.tasks-table--awards th {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
+.tasks-table--awards td {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
 .tasks-table--awards th:last-child,
 .tasks-table--awards td:last-child {
   text-align: left;
