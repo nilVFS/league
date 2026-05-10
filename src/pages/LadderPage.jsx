@@ -206,7 +206,7 @@ function LadderPage() {
     const query = normalizeAchievementText(claimForm.achievementQuery);
 
     if (!query) {
-      return sortedAwards;
+      return [];
     }
 
     return sortedAwards.filter((award) =>
@@ -442,50 +442,52 @@ function LadderPage() {
                     награды
                   </a>
                 </span>
-                <input
-                  autoComplete="off"
-                  onChange={(event) =>
-                    setClaimForm((current) => ({
-                      ...current,
-                      achievementCode: "",
-                      achievementQuery: event.target.value,
-                    }))
-                  }
-                  placeholder="Например, 1 или часть названия награды"
-                  required
-                  type="text"
-                  value={claimForm.achievementQuery}
-                />
+                <div className="ladder-claim-autocomplete">
+                  <input
+                    autoComplete="off"
+                    onChange={(event) =>
+                      setClaimForm((current) => ({
+                        ...current,
+                        achievementCode: "",
+                        achievementQuery: event.target.value,
+                      }))
+                    }
+                    placeholder="Например, 1 или часть названия награды"
+                    required
+                    type="text"
+                    value={claimForm.achievementQuery}
+                  />
 
-                {filteredAwards.length ? (
-                  <div className="ladder-claim-suggestions">
-                    {filteredAwards.slice(0, 8).map((award) => {
-                      const code = Number(award.code);
-                      const isUnavailable = unavailableSingleUseAwardCodes.has(code);
+                  {filteredAwards.length ? (
+                    <div className="ladder-claim-suggestions">
+                      {filteredAwards.slice(0, 8).map((award) => {
+                        const code = Number(award.code);
+                        const isUnavailable = unavailableSingleUseAwardCodes.has(code);
 
-                      return (
-                        <button
-                          className={`ladder-claim-suggestion${
-                            isUnavailable ? " ladder-claim-suggestion--disabled" : ""
-                          }`}
-                          disabled={isUnavailable}
-                          key={award.id || award.code}
-                          onClick={() =>
-                            setClaimForm((current) => ({
-                              ...current,
-                              achievementCode: String(code),
-                              achievementQuery: buildAchievementOptionLabel(award),
-                            }))
-                          }
-                          type="button"
-                        >
-                          {buildAchievementOptionLabel(award)}
-                          {isUnavailable ? " — уже выполнено" : ""}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : null}
+                        return (
+                          <button
+                            className={`ladder-claim-suggestion${
+                              isUnavailable ? " ladder-claim-suggestion--disabled" : ""
+                            }`}
+                            disabled={isUnavailable}
+                            key={award.id || award.code}
+                            onClick={() =>
+                              setClaimForm((current) => ({
+                                ...current,
+                                achievementCode: String(code),
+                                achievementQuery: buildAchievementOptionLabel(award),
+                              }))
+                            }
+                            type="button"
+                          >
+                            {buildAchievementOptionLabel(award)}
+                            {isUnavailable ? " — уже выполнено" : ""}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </div>
               </label>
 
               <label className="admin-field">
