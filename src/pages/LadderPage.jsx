@@ -175,7 +175,6 @@ function LadderPage() {
 
   const loading = awardsState.loading || claimsState.loading;
   const error = awardsState.error || claimsState.error;
-  const totalAwardsCount = awardsState.items.length;
   const filteredLadderRows = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) {
@@ -356,9 +355,7 @@ function LadderPage() {
                           <span>{player.playerTag}</span>
                         </div>
                       </td>
-                      <td data-label="Выполнено">
-                        {player.achievementsCount}/{totalAwardsCount}
-                      </td>
+                      <td data-label="Выполнено">{player.achievementsCount}</td>
                       <td className="ladder-table__score" data-label="Баллы">
                         {player.totalScore}
                       </td>
