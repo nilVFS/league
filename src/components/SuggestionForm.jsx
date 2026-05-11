@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Link } from "react-router-dom";
 import { collectionNames, createDocument } from "../lib/content";
 import {
   extractTwitchClipSlug,
@@ -14,7 +13,6 @@ const initialClipState = {
   description: "",
   clipSlug: "",
   thumbnailUrl: "",
-  consentAccepted: false,
 };
 
 const initialParticipantState = {
@@ -23,10 +21,7 @@ const initialParticipantState = {
   href: "",
   imageUrl: "",
   description: "",
-  consentAccepted: false,
 };
-
-const privacyPolicyVersion = "2026-05-09";
 
 function SuggestionForm({
   type,
@@ -148,9 +143,6 @@ function SuggestionForm({
           clipSlug,
           thumbnailUrl: clipForm.thumbnailUrl.trim(),
           broadcasterName,
-          consentAccepted: clipForm.consentAccepted,
-          consentAcceptedAt: new Date().toISOString(),
-          privacyPolicyVersion,
         });
       } else {
         const href = participantForm.href.trim();
@@ -169,9 +161,6 @@ function SuggestionForm({
           type,
           status: "pending",
           ...participantPayload,
-          consentAccepted: participantForm.consentAccepted,
-          consentAcceptedAt: new Date().toISOString(),
-          privacyPolicyVersion,
         });
       }
 
@@ -321,29 +310,6 @@ function SuggestionForm({
                   )}
                 </>
               )}
-
-              <label className="consent-field">
-                <input
-                  checked={isClip ? clipForm.consentAccepted : participantForm.consentAccepted}
-                  onChange={(event) =>
-                    (isClip ? setClipForm : setParticipantForm)((current) => ({
-                      ...current,
-                      consentAccepted: event.target.checked,
-                    }))
-                  }
-                  required
-                  type="checkbox"
-                />
-                <span>
-                  Подтверждаю, что ознакомился с
-                  {" "}
-                  <Link className="consent-field__link" to="/privacy">
-                    политикой обработки персональных данных
-                  </Link>
-                  {" "}
-                  и согласен на обработку переданных мной данных.
-                </span>
-              </label>
 
               <div className="admin-actions">
                 <button className="admin-button" disabled={submitting} type="submit">

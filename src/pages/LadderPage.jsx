@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import LadderModal from "../components/LadderModal";
 import PageIntroCard from "../components/PageIntroCard";
 import useCollectionData from "../hooks/useCollectionData";
@@ -11,10 +10,7 @@ const initialClaimForm = {
   achievementCode: "",
   achievementQuery: "",
   proofUrl: "",
-  consentAccepted: false,
 };
-
-const privacyPolicyVersion = "2026-05-09";
 const SINGLE_USE_AWARD_CODES = new Set([1, 64, 65, 66]);
 
 function normalizeAchievementText(value = "") {
@@ -256,9 +252,6 @@ function LadderPage() {
           chatterLogin: "site",
           chatterName: "site",
           submittedAt: new Date().toISOString(),
-          consentAccepted: claimForm.consentAccepted,
-          consentAcceptedAt: new Date().toISOString(),
-          privacyPolicyVersion,
         }),
       });
 
@@ -503,29 +496,6 @@ function LadderPage() {
                   type="url"
                   value={claimForm.proofUrl}
                 />
-              </label>
-
-              <label className="consent-field">
-                <input
-                  checked={claimForm.consentAccepted}
-                  onChange={(event) =>
-                    setClaimForm((current) => ({
-                      ...current,
-                      consentAccepted: event.target.checked,
-                    }))
-                  }
-                  required
-                  type="checkbox"
-                />
-                <span>
-                  Подтверждаю, что ознакомился с
-                  {" "}
-                  <Link className="consent-field__link" to="/privacy">
-                    политикой обработки персональных данных
-                  </Link>
-                  {" "}
-                  и согласен на обработку данных, указанных в этой заявке.
-                </span>
               </label>
 
               {submitError ? <div className="state-box state-box--error">{submitError}</div> : null}

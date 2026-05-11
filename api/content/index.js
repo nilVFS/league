@@ -7,8 +7,6 @@ import {
 } from "../_lib/content-store.js";
 import { getQueryParam, readJsonBody, sendJson } from "../_lib/http.js";
 
-const privacyPolicyVersion = "2026-05-09";
-
 function canReadCollection(name, isAdmin) {
   return !["suggestions", "trackedChannels", "ladderPlayers"].includes(name) || isAdmin;
 }
@@ -35,21 +33,6 @@ function sanitizeAchievementClaimForPublic(item) {
     status: item.status,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
-  };
-}
-
-function validatePublicSuggestionPayload(payload) {
-  if (payload?.consentAccepted !== true) {
-    const error = new Error("Нужно подтвердить согласие с политикой обработки персональных данных.");
-    error.statusCode = 422;
-    throw error;
-  }
-
-  return {
-    ...payload,
-    consentAccepted: true,
-    consentAcceptedAt: String(payload.consentAcceptedAt || new Date().toISOString()),
-    privacyPolicyVersion: String(payload.privacyPolicyVersion || privacyPolicyVersion),
   };
 }
 
@@ -94,11 +77,7 @@ export default async function handler(request, response) {
         return sendJson(response, 401, { error: "Unauthorized" });
       }
 
-      const rawPayload = await readJsonBody(request);
-      const payload =
-        collectionName === "suggestions" && !isAdmin
-          ? validatePublicSuggestionPayload(rawPayload)
-          : rawPayload;
+      const payload = await readJsonBody(request);
       const document = await createDocument(collectionName, payload);
       return sendJson(response, 201, { item: document });
     }

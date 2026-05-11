@@ -188,8 +188,6 @@ async function queueAchievementClaimModeration(command, meta = {}) {
     broadcasterUserId: meta.broadcasterUserId || "",
     broadcasterLogin: meta.broadcasterLogin || "",
     submittedAt: meta.submittedAt || new Date().toISOString(),
-    consentAcceptedAt: meta.consentAcceptedAt || "",
-    privacyPolicyVersion: meta.privacyPolicyVersion || "",
     description: "Игрока нет в белом списке ладдера. Нужна модерация.",
     status: "pending",
   };
@@ -258,8 +256,6 @@ export async function saveAchievementClaim(command, meta = {}, options = {}) {
     broadcasterUserId: meta.broadcasterUserId || "",
     broadcasterLogin: meta.broadcasterLogin || "",
     submittedAt: meta.submittedAt || new Date().toISOString(),
-    consentAcceptedAt: meta.consentAcceptedAt || "",
-    privacyPolicyVersion: meta.privacyPolicyVersion || "",
     status: "accepted",
   };
 
