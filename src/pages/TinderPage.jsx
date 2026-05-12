@@ -16,9 +16,19 @@ function formatPlayTime(value) {
     return "Время не указано";
   }
 
-  const date = new Date(value);
+  const trimmedValue = String(value).trim();
+  if (!trimmedValue) {
+    return "Время не указано";
+  }
+
+  const looksLikeIsoDateTime = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(trimmedValue);
+  if (!looksLikeIsoDateTime) {
+    return trimmedValue;
+  }
+
+  const date = new Date(trimmedValue);
   if (Number.isNaN(date.getTime())) {
-    return value;
+    return trimmedValue;
   }
 
   return new Intl.DateTimeFormat("ru-RU", {
@@ -76,31 +86,24 @@ function TinderPage() {
       const nickname = form.nickname.trim();
       const description = form.description.trim();
       const playTime = form.playTime.trim();
-      const groupSize = Number(form.groupSize);
+      const groupSizeRaw = String(form.groupSize || "").trim();
+      const groupSize = groupSizeRaw ? Number(groupSizeRaw) : null;
 
       if (!nickname) {
         throw new Error("Укажи ник, чтобы люди понимали, кого искать.");
       }
 
-      if (!Number.isFinite(groupSize) || groupSize < 1 || groupSize > 6) {
+      if (groupSizeRaw && (!Number.isFinite(groupSize) || groupSize < 1 || groupSize > 6)) {
         throw new Error("Размер группы должен быть числом от 1 до 6.");
-      }
-
-      if (!playTime) {
-        throw new Error("Добавь время, когда вы собираетесь играть.");
-      }
-
-      if (!description) {
-        throw new Error("Пара слов о себе или о том, кого ищете, сильно поможет.");
       }
 
       await createDocument(collectionNames.tinderPosts, {
         nickname,
-        groupSize,
-        playTime,
-        description,
         status: "open",
         interestedPlayers: [],
+        ...(groupSizeRaw ? { groupSize } : {}),
+        ...(playTime ? { playTime } : {}),
+        ...(description ? { description } : {}),
       });
 
       await refresh();
@@ -126,7 +129,7 @@ function TinderPage() {
         throw new Error("Напиши свой ник перед откликом.");
       }
 
-      const response = await fetch(buildApiUrl("/api/tinder/respond"), {
+      const response = await fetch(buildApiUrl("/api/tinder-respond"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -199,8 +202,7 @@ function TinderPage() {
                   onChange={(event) =>
                     setForm((current) => ({ ...current, groupSize: event.target.value }))
                   }
-                  placeholder="2"
-                  required
+                  placeholder="Например, 2"
                   type="number"
                   value={form.groupSize}
                 />
@@ -212,8 +214,8 @@ function TinderPage() {
                   onChange={(event) =>
                     setForm((current) => ({ ...current, playTime: event.target.value }))
                   }
-                  required
-                  type="datetime-local"
+                  placeholder="Например, сегодня после 20:00"
+                  type="text"
                   value={form.playTime}
                 />
               </label>
@@ -225,7 +227,6 @@ function TinderPage() {
                     setForm((current) => ({ ...current, description: event.target.value }))
                   }
                   placeholder="Кого ищете, какой вайб, что по ролям или по онлайну."
-                  required
                   value={form.description}
                 />
               </label>
@@ -275,7 +276,9 @@ function TinderPage() {
                         <div className="tinder-card__badge">
                           {post.status === "closed"
                             ? "Набор закрыт"
-                            : `Группа: ${post.groupSize || "?"}`}
+                            : post.groupSize
+                              ? `Группа: ${post.groupSize}`
+                              : "Ищет тиммейтов"}
                         </div>
                       </div>
 
