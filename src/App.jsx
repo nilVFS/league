@@ -6,6 +6,7 @@ import ClipsPage from "./pages/ClipsPage";
 import HomePage from "./pages/HomePage";
 import LadderPage from "./pages/LadderPage";
 import ParticipantsPage from "./pages/ParticipantsPage";
+import TinderPage from "./pages/TinderPage";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="/clips" element={<ClipsPage />} />
         <Route path="/ladder" element={<LadderPage />} />
         <Route path="/participants" element={<ParticipantsPage />} />
+        <Route path="/tinder" element={<TinderPage />} />
       </Route>
     </Routes>
   );

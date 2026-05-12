@@ -5,6 +5,7 @@ export const collectionNames = {
   participants: "participants",
   awards: "awards",
   suggestions: "suggestions",
+  tinderPosts: "tinderPosts",
   achievementClaims: "achievementClaims",
   ladderPlayers: "ladderPlayers",
   trackedChannels: "trackedChannels",

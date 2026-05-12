@@ -3,6 +3,7 @@ export const navItems = [
   { label: "Ладдер", to: "/ladder" },
   { label: "Клипы", to: "/clips" },
   { label: "Стримеры", to: "/participants" },
+  { label: "Тиндер", to: "/tinder" },
   { label: "Награды", to: "/awards" },
 ];
 

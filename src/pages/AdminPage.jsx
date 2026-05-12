@@ -112,6 +112,9 @@ function AdminPage() {
   const suggestionsState = useCollectionData(collectionNames.suggestions, {
     enabled: activeTab === "requests",
   });
+  const tinderPostsState = useCollectionData(collectionNames.tinderPosts, {
+    enabled: activeTab === "requests",
+  });
 
   const refreshCollection = async (collectionName) => {
     const refreshByCollection = {
@@ -121,6 +124,7 @@ function AdminPage() {
       [collectionNames.ladderPlayers]: ladderPlayersState.refresh,
       [collectionNames.achievementClaims]: achievementClaimsState.refresh,
       [collectionNames.suggestions]: suggestionsState.refresh,
+      [collectionNames.tinderPosts]: tinderPostsState.refresh,
     };
 
     const refresh = refreshByCollection[collectionName];
@@ -150,6 +154,15 @@ function AdminPage() {
     () =>
       suggestionsState.items.filter((item) => item.status === "pending"),
     [suggestionsState.items]
+  );
+  const sortedTinderPosts = useMemo(
+    () =>
+      [...tinderPostsState.items].sort((left, right) => {
+        const leftTime = Date.parse(left.createdAt || left.updatedAt || "") || 0;
+        const rightTime = Date.parse(right.createdAt || right.updatedAt || "") || 0;
+        return rightTime - leftTime;
+      }),
+    [tinderPostsState.items]
   );
 
   const groupedAchievementClaims = useMemo(() => {
@@ -849,6 +862,41 @@ function AdminPage() {
       setMessage("Запрос отклонён.");
     } catch (error) {
       setMessage(error.message || "Не удалось отклонить запрос.");
+    } finally {
+      setSubmitting("");
+    }
+  };
+
+  const handleToggleTinderPostStatus = async (post) => {
+    const nextStatus = post.status === "closed" ? "open" : "closed";
+    setSubmitting(`tinder-status-${post.id}`);
+    setMessage("");
+
+    try {
+      await updateDocument(collectionNames.tinderPosts, post.id, {
+        status: nextStatus,
+      });
+      await tinderPostsState.refresh();
+      setMessage(nextStatus === "closed" ? "Заявка закрыта." : "Заявка снова открыта.");
+    } catch (error) {
+      setMessage(error.message || "Не удалось обновить статус заявки.");
+    } finally {
+      setSubmitting("");
+    }
+  };
+
+  const handleClearTinderInterestedPlayers = async (post) => {
+    setSubmitting(`tinder-clear-${post.id}`);
+    setMessage("");
+
+    try {
+      await updateDocument(collectionNames.tinderPosts, post.id, {
+        interestedPlayers: [],
+      });
+      await tinderPostsState.refresh();
+      setMessage("Список желающих очищен.");
+    } catch (error) {
+      setMessage(error.message || "Не удалось очистить список желающих.");
     } finally {
       setSubmitting("");
     }
@@ -1865,6 +1913,80 @@ function AdminPage() {
                   ) : (
                     <div className="state-box">Пока нет запросов на модерацию.</div>
                   )}
+                </section>
+
+                <section className="admin-card">
+                  <h2>Заявки тиммейтов</h2>
+                  {tinderPostsState.loading ? (
+                    <div className="state-box">Загружаем заявки...</div>
+                  ) : null}
+                  {tinderPostsState.error ? (
+                    <div className="state-box state-box--error">{tinderPostsState.error}</div>
+                  ) : null}
+                  {!tinderPostsState.loading && !tinderPostsState.error ? (
+                    sortedTinderPosts.length ? (
+                      <div className="admin-card__content admin-card__content--scroll">
+                        <div className="admin-list">
+                          {sortedTinderPosts.map((post) => (
+                            <div className="admin-list__item" key={post.id}>
+                              <div className="admin-list__body">
+                                <strong>
+                                  {post.nickname || "Без ника"} • группа {post.groupSize || "?"}
+                                </strong>
+                                <div className="admin-list__meta">
+                                  Статус: {post.status === "closed" ? "закрыта" : "открыта"}
+                                </div>
+                                {post.playTime ? (
+                                  <div className="admin-list__meta">Время: {post.playTime}</div>
+                                ) : null}
+                                {post.description ? (
+                                  <div className="admin-list__meta">{post.description}</div>
+                                ) : null}
+                                <div className="admin-list__meta">
+                                  Желающие:{" "}
+                                  {Array.isArray(post.interestedPlayers) &&
+                                  post.interestedPlayers.length
+                                    ? post.interestedPlayers.join(", ")
+                                    : "пока никого"}
+                                </div>
+                              </div>
+
+                              <div className="admin-list__actions">
+                                <button
+                                  className="admin-button admin-button--ghost"
+                                  disabled={submitting === `tinder-status-${post.id}`}
+                                  onClick={() => handleToggleTinderPostStatus(post)}
+                                  type="button"
+                                >
+                                  {post.status === "closed" ? "Открыть" : "Закрыть"}
+                                </button>
+                                <button
+                                  className="admin-button admin-button--ghost"
+                                  disabled={submitting === `tinder-clear-${post.id}`}
+                                  onClick={() => handleClearTinderInterestedPlayers(post)}
+                                  type="button"
+                                >
+                                  Очистить отклики
+                                </button>
+                                <button
+                                  className="admin-button admin-button--ghost"
+                                  disabled={submitting === `delete-${post.id}`}
+                                  onClick={() =>
+                                    handleDelete(collectionNames.tinderPosts, post.id, "Заявку")
+                                  }
+                                  type="button"
+                                >
+                                  Удалить
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="state-box">Пока нет заявок тиммейтов.</div>
+                    )
+                  ) : null}
                 </section>
               </div>
             ) : null}

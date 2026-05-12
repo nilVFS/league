@@ -12,7 +12,7 @@ function canReadCollection(name, isAdmin) {
 }
 
 function canCreateCollection(name, isAdmin) {
-  if (name === "suggestions") {
+  if (name === "suggestions" || name === "tinderPosts") {
     return true;
   }
 
