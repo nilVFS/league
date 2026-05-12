@@ -11,6 +11,7 @@ export const collectionNames = {
   awards: "awards",
   suggestions: "suggestions",
   tinderPosts: "tinderPosts",
+  tinderResponses: "tinderResponses",
   achievementClaims: "achievementClaims",
   ladderPlayers: "ladderPlayers",
   trackedChannels: "trackedChannels",
@@ -26,6 +27,7 @@ const publicCollectionNames = new Set([
   collectionNames.participants,
   collectionNames.awards,
   collectionNames.tinderPosts,
+  collectionNames.tinderResponses,
 ]);
 const moderatedCollectionNames = new Set([
   collectionNames.suggestions,
@@ -40,6 +42,7 @@ const defaultStore = {
   awards: [],
   suggestions: [],
   tinderPosts: [],
+  tinderResponses: [],
   achievementClaims: [],
   ladderPlayers: [],
   trackedChannels: [],

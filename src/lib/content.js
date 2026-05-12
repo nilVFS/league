@@ -6,6 +6,7 @@ export const collectionNames = {
   awards: "awards",
   suggestions: "suggestions",
   tinderPosts: "tinderPosts",
+  tinderResponses: "tinderResponses",
   achievementClaims: "achievementClaims",
   ladderPlayers: "ladderPlayers",
   trackedChannels: "trackedChannels",

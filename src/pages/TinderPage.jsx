@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import PageIntroCard from "../components/PageIntroCard";
 import useCollectionData from "../hooks/useCollectionData";
 import { collectionNames, createDocument } from "../lib/content";
-import { buildApiUrl } from "../lib/api";
 
 const initialForm = {
   nickname: "",
@@ -41,6 +40,7 @@ function formatPlayTime(value) {
 
 function TinderPage() {
   const { items, loading, error, refresh } = useCollectionData(collectionNames.tinderPosts);
+  const responsesState = useCollectionData(collectionNames.tinderResponses);
   const [form, setForm] = useState(initialForm);
   const [search, setSearch] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -75,6 +75,30 @@ function TinderPage() {
         .some((value) => String(value).toLowerCase().includes(query))
     );
   }, [search, sortedPosts]);
+
+  const interestedPlayersByPostId = useMemo(() => {
+    const groupedPlayers = new Map();
+
+    responsesState.items.forEach((response) => {
+      const postId = String(response.postId || "").trim();
+      const nickname = String(response.nickname || "").trim();
+
+      if (!postId || !nickname) {
+        return;
+      }
+
+      const currentPlayers = groupedPlayers.get(postId) || [];
+      const hasDuplicate = currentPlayers.some(
+        (player) => player.toLowerCase() === nickname.toLowerCase()
+      );
+
+      if (!hasDuplicate) {
+        groupedPlayers.set(postId, [...currentPlayers, nickname]);
+      }
+    });
+
+    return groupedPlayers;
+  }, [responsesState.items]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -129,36 +153,27 @@ function TinderPage() {
         throw new Error("Напиши свой ник перед откликом.");
       }
 
-      const response = await fetch(buildApiUrl("/api/tinder-respond"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          postId,
-          nickname,
-        }),
+      const existingPlayers = interestedPlayersByPostId.get(postId) || [];
+      const hasDuplicate = existingPlayers.some(
+        (player) => player.toLowerCase() === nickname.toLowerCase()
+      );
+
+      if (hasDuplicate) {
+        setReplyNickname("");
+        setReplyPostId("");
+        setReplySuccess("Этот ник уже есть в списке желающих.");
+        return;
+      }
+
+      await createDocument(collectionNames.tinderResponses, {
+        postId,
+        nickname,
       });
 
-      let payload = null;
-      try {
-        payload = await response.json();
-      } catch {
-        payload = null;
-      }
-
-      if (!response.ok) {
-        throw new Error(payload?.error || "Не удалось отправить отклик.");
-      }
-
-      await refresh();
+      await responsesState.refresh();
       setReplyNickname("");
       setReplyPostId("");
-      setReplySuccess(
-        payload?.duplicate
-          ? "Этот ник уже есть в списке желающих."
-          : "Ник добавлен в список желающих."
-      );
+      setReplySuccess("Ник добавлен в список желающих.");
     } catch (replySubmitError) {
       setReplyError(replySubmitError.message || "Не удалось отправить отклик.");
     } finally {
@@ -288,9 +303,9 @@ function TinderPage() {
                         <div className="tinder-card__responses-title">
                           Желающие поиграть вместе
                         </div>
-                        {Array.isArray(post.interestedPlayers) && post.interestedPlayers.length ? (
+                        {(interestedPlayersByPostId.get(post.id) || []).length ? (
                           <div className="tinder-card__responses-list">
-                            {post.interestedPlayers.map((player) => (
+                            {(interestedPlayersByPostId.get(post.id) || []).map((player) => (
                               <span className="tinder-card__response-chip" key={`${post.id}-${player}`}>
                                 {player}
                               </span>
