@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start:api": "node server/index.js"
+    "start:api": "node server/index.js",
+    "cleanup:twitch-chat": "node scripts/cleanup-twitch-chat-eventsub.mjs"
   },
   "dependencies": {
     "@ydbjs/auth-yandex-cloud": "^0.1.2",
